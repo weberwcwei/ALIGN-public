@@ -128,6 +128,12 @@ def cmdline( argv):
         cktgen.consume_results( cktgen_args, tech)
         run_sh( f'cp INPUT/mydesign_dr_globalrouting.json {args.source + ".json"}')
 
+        # Do not overwrite
+        run_sh(f'rm -rf {args.source}')
+        run_sh(f'mkdir {args.source}')
+        run_sh(f'cp -r INPUT {args.source}')
+        run_sh(f'cp -r out {args.source}')
+
     if args.viewer_input_dir and args.source:
         run_sh( f'cp INPUT/mydesign_dr_globalrouting.json {args.viewer_input_dir + "/" + args.source + ".json"}')
 
