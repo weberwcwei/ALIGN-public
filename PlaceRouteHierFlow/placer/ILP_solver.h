@@ -45,6 +45,7 @@ class ILP_solver {
   double area = 0, HPWL = 0, ratio = 0, dead_area = 0, linear_const = 0, multi_linear_const = 0;
   typedef void (lphandlestr_func)(lprec *lp, void *userhandle, char *buf);
   static void lpsolve_logger(lprec *lp, void *userhandle, char *buf);
+  map<pair<string, string>, double> PinPairWeights;
 
   public:
   ILP_solver();
@@ -52,6 +53,7 @@ class ILP_solver {
   ILP_solver(const ILP_solver& solver);
   ILP_solver& operator=(const ILP_solver& solver);
   double GenerateValidSolution(design& mydesign, SeqPair& curr_sp, PnRDB::Drc_info& drcInfo);
+  double CalculateCostFromSim(design& mydesign, SeqPair& curr_sp);
   double CalculateCost(design& mydesign, SeqPair& curr_sp);
   void WritePlacement(design& caseNL, SeqPair& curr_sp, string outfile);
   void PlotPlacement(design& caseNL, SeqPair& curr_sp, string outfile);

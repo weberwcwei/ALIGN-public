@@ -499,11 +499,85 @@ double ILP_solver::GenerateValidSolution(design& mydesign, SeqPair& curr_sp, PnR
   return cost;
 }
 
+double ILP_solver::CalculateCostFromSim(design& mydesign, SeqPair& curr_sp)
+{
+	auto logger = spdlog::default_logger()->clone("placer.cost.Cost");
+	set<string> nets;
+	if (PinPairWeights.empty()) {
+		char* sideload = getenv("COST_FROM_SIM");
+		string slf;
+		if (sideload) {
+			slf = sideload;
+			ifstream ifs(slf);
+			if (ifs) {
+				string tmps1, tmps2;
+				double wt(0.);
+				while (ifs) {
+					ifs >> tmps1;
+					nets.insert(tmps1);
+					ifs >> tmps1 >> tmps2 >> wt;
+					PinPairWeights[make_pair(tmps1, tmps2)] = wt;
+				}
+			}
+			ifs.close();
+
+			for (auto& it : PinPairWeights) {
+				logger->info("DEBUG pins {0} {1} {2}", it.first.first, it.first.second, it.second);
+			}
+		}
+	}
+	map<string, pair<int, int> > pinCoords; 
+	for (auto neti : mydesign.Nets) {
+		if (nets.find(neti.name) == nets.end()) continue;
+		for (auto connectedj : neti.connected) {
+			if (connectedj.type == placerDB::Block) {
+				int iter2 = connectedj.iter2, iter = connectedj.iter;
+				for (auto centerk : mydesign.Blocks[iter2][curr_sp.selected[iter2]].blockPins[iter].center) {
+					// calculate contact center
+					int pin_x = centerk.x;
+					int pin_y = centerk.y;
+					if (Blocks[iter2].H_flip) pin_x = mydesign.Blocks[iter2][curr_sp.selected[iter2]].width - pin_x;
+					if (Blocks[iter2].V_flip) pin_y = mydesign.Blocks[iter2][curr_sp.selected[iter2]].height - pin_y;
+					pin_x += Blocks[iter2].x;
+					pin_y += Blocks[iter2].y;
+					pinCoords[mydesign.GetBlockName(iter2) + "/" + mydesign.GetBlockPinName(iter2, iter, curr_sp.selected[iter2])] = make_pair(pin_x, pin_y);
+				}
+			}
+		}
+	}
+
+	//for (auto& it : pinCoords) {
+	//	logger->info("DEBUG  {0} : {1} {2}", it.first, it.second.first, it.second.second);
+	//}
+
+	double cost(0.);
+
+	for (auto& it : PinPairWeights) {
+		double dist(0.);
+		auto it1 = pinCoords.find(it.first.first);
+		auto it2 = pinCoords.find(it.first.second);
+		if (it1 != pinCoords.end() && it2 != pinCoords.end()) {
+			dist = abs(it1->second.first - it2->second.first) + abs(it1->second.second - it2->second.second);
+		} else {
+			it1 = pinCoords.find(it.first.second);
+			it2 = pinCoords.find(it.first.first);
+			if (it1 != pinCoords.end() && it2 != pinCoords.end()) {
+				dist = abs(it1->second.first - it2->second.first) + abs(it1->second.second - it2->second.second);
+			}
+		}
+		cost += dist * it.second;
+	}
+	logger->info("DEBUG delta cost : {0}", cost);
+
+	return cost*1.e8;
+}
+
 double ILP_solver::CalculateCost(design& mydesign, SeqPair& curr_sp) {
+	auto logger = spdlog::default_logger()->clone("placer.cost.Cost");
   ConstGraph const_graph;
   double cost = 0;
-  cost += area;
-  cost += HPWL * const_graph.LAMBDA;
+  cost += 0.1 * area;
+  cost += 0.1 * HPWL * const_graph.LAMBDA;
   double match_cost = 0;
   for (auto mbi : mydesign.Match_blocks) {
     match_cost += abs(Blocks[mbi.blockid1].x + mydesign.Blocks[mbi.blockid1][curr_sp.selected[mbi.blockid1]].width / 2 - Blocks[mbi.blockid2].x -
@@ -516,6 +590,9 @@ double ILP_solver::CalculateCost(design& mydesign, SeqPair& curr_sp) {
   cost += dead_area / area * const_graph.PHI;
   cost += linear_const * const_graph.PI;
   cost += multi_linear_const * const_graph.PII;
+  logger->info("DEBUG cost oringinal : {0}", cost);
+  cost += CalculateCostFromSim(mydesign, curr_sp);
+  logger->info("DEBUG cost after : {0}", cost);
   return cost;
 }
 
