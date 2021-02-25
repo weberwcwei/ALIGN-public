@@ -6,6 +6,7 @@ import pandas as pd
 import itertools
 import math
 import re
+import numpy as np
 
 from utils.classdesc import primitive, module, transistor, passive, net, subcircuit
 
@@ -56,37 +57,30 @@ def check_if_module(primitive_name, modulelist):
             pass
     return False
 
-def prepare_cfconst(design, modulelist):
-    temp_dict = dict()
-    tc_directory = "/testcase_" + design + "/"
-    with open(WORK_DIR + tc_directory + "nets_under_test.txt","r") as fnode:
-        for line in fnode:
-            nets_under_test = line.strip().split()
-
-    for module in modulelist:
-        if module.name == args.design:
-            if not os.path.exists(WORK_DIR + "/outputs"):
-                os.mkdir(WORK_DIR + "/outputs")
-            else:
-                os.chdir(WORK_DIR + tc_directory)
-                with open(design + ".cfconst", 'w') as fcfconst:
-                    for net in module.netset:
-                        if net in nets_under_test:
-                            temp_list = list()
-                            for primitive in module.primitivelist:
-                                if net in primitive.connections:
-                                    if not primitive.connections[net] == "B":
-                                        temp_list.append(primitive.block_name + "/" + primitive.connections[net])
-                            temp_dict[net] = temp_list
-                    # print(temp_dict)
-                    for item in temp_dict:
-                        line = ""
-                        pin_combos = list(itertools.combinations(temp_dict[item], 2))
-                        # print(pin_combos)
-                        for pin_combo in list(pin_combos):
-                            fcfconst.write(item + "    " + pin_combo[0] + "    " + pin_combo[1] + "\n")
-                            module.branch_under_test.append([item, pin_combo[0], pin_combo[1]])
-    return modulelist
+# def prepare_cfconst(design, modulelist):
+#     temp_dict = dict()
+#     tc_directory = "/testcase_" + design + "/"
+#
+#     for module in modulelist:
+#         if module.name == args.design:
+#             os.chdir(WORK_DIR + tc_directory)
+#             with open(design + ".cfconst", 'w') as fcfconst:
+#                 for net in module.netlist:
+#                     if net.isundertest:
+#                         temp_list = list()
+#                         for connection in net.connections:
+#                                 if not connection[1] == "B":
+#                                     temp_list.append(connection[0] + "/" + connection[1])
+#                         temp_dict[net.name] = temp_list
+#                 print(temp_dict)
+                # for item in temp_dict:
+                #     line = ""
+                #     pin_combos = list(itertools.combinations(temp_dict[item], 2))
+                #     # print(pin_combos)
+                #     for pin_combo in list(pin_combos):
+                #         fcfconst.write(item + "    " + pin_combo[0] + "    " + pin_combo[1] + "\n")
+                #         module.branch_under_test.append([item, pin_combo[0], pin_combo[1]])
+    # return modulelist
 
 
 def extract_spice_netlist(design):
@@ -207,49 +201,16 @@ def extract_verilog_netlist(design):
                                 # ismodule = check_if_module(device_name, modulelist)
                                 temp_pinlist, temp_netlist = get_net_from_primitive(line)
                                 for i, pin in enumerate(temp_netlist): # ignoring body terminal for now
-                                    get_netid = pin_is_in_the_list(pin, netlist)
-                                    if get_netid is not None:
-                                        netlist[get_netid].connections.append([device_name, temp_pinlist[i]])
-                                    else:
-                                        isundertest = net_is_under_test(pin, nets_under_test)
-                                        netlist.append(net(pin, isundertest, netid))
-                                        netlist[-1].connections.append([device_name, temp_pinlist[i]])
-                                        netid = netid + 1
+                                    if not temp_pinlist[i] == "B":
+                                        get_netid = pin_is_in_the_list(pin, netlist)
+                                        if get_netid is not None:
+                                            netlist[get_netid].connections.append([device_name, temp_pinlist[i]])
+                                        else:
+                                            isundertest = net_is_under_test(pin, nets_under_test)
+                                            netlist.append(net(pin, isundertest, netid))
+                                            netlist[-1].connections.append([device_name, temp_pinlist[i]])
+                                            netid = netid + 1
     return module_list
-# def extract_verilog_netlist(design):
-#     verilog_file = args.design + ".v"
-#     tc_directory = "/testcase_" + design + "/"
-#     logging.info("Extracting verilog file: {}" .format(verilog_file))
-#     module_list = list()
-#
-#     if not os.path.exists(WORK_DIR + tc_directory + verilog_file):
-#         logging.critical("{} not found. Quitting ChargeFlow scheme." .format(verilog_file))
-#         exit()
-#
-#     with open(WORK_DIR + tc_directory + verilog_file) as fverilog:
-#         for line in fverilog:
-#             line = line.strip()
-#             if line.startswith("//"):
-#                 continue
-#             elif line.startswith("module"):
-#                 if not line.endswith("global_power;"):
-#                     module_name = line.split()[1]
-#                     primitivelist = list()
-#                     netset = set()
-#                     for line in fverilog:
-#                         if not line == "\n":
-#                             if line.startswith("endmodule"):
-#                                 modulelist.append(module(module_name, portlist, primitivelist, netset))
-#                                 break
-#                             elif line.startswith("input"):
-#                                 line = line.replace(",","").replace(";","")
-#                                 portlist = line.split()[1:]
-#                                 netset = netset.union(portlist)
-#                             else:
-#                                 ismodule = check_if_module(line, modulelist)
-#                                 netset = netset.union(get_net_from_primitive(line))
-#                                 primitivelist.append(extract_primitive(module_name, line, ismodule))
-#     return modulelist
 
 def get_net_from_primitive(line):
     line_splited = line.split()
@@ -434,7 +395,7 @@ def generate_tran_data(design):
     # os.system("sed -i 's/=//' " + design + ".measure")
     # os.chdir(WORK_DIR)
 
-def extract_print_file(design, subcircuit_list):
+def generate_branch_current_from_spice(design, subcircuit_list):
     tc_directory = "/testcase_" + design + "/"
     printfile = design + "_revised_tb.print"
     os.chdir(WORK_DIR + tc_directory)
@@ -473,7 +434,7 @@ def extract_print_file(design, subcircuit_list):
                     # rearranged_lines = rearranged_lines + ":" + ":".join(re.split("  +", lines[line_to_read].strip())[1:])
                     rearranged_lines = rearranged_lines + ":" + ":".join(templine[1:])
             rearranged_lines = rearranged_lines + "\n"
-        print(rearranged_lines)
+        # print(rearranged_lines)
     with open(WORK_DIR + tc_directory + "pin_currents_new.csv", 'w') as fpinc:
         lines = fpinc.writelines(rearranged_lines)
     # with open(WORK_DIR + tc_directory + "pin_currents_new.csv", 'r') as fpinc:
@@ -489,55 +450,97 @@ def extract_print_file(design, subcircuit_list):
                     clmns_under_test = list()
                     source_list = list()
                     sink_list = list()
+                    """Decide source and sink pins of the net under test"""
                     for connection in net.connections:
                         clmns_under_test.append("i" + connection[1] + "(I1." + connection[0] + ")")
                     df_under_test = df[clmns_under_test]
                     for item in clmns_under_test:
-                        if df_under_test.loc[1:,item].values[0] < 0:
+                        # print(df_under_test[item].mean())
+                        if df_under_test[item].mean() < 0:
                             sink_list.append(item)
-                        elif df_under_test.loc[1:,item].values[0] > 0:
+                        elif df_under_test[item].mean() > 0:
                             source_list.append(item)
                         else:
                             pass
-
+                    logging.info("{}:\n" .format(net.name))
+                    logging.info("Sources: {}, Sinks: {}" .format(source_list, sink_list))
+                    """Decide source and sink pins of the net under test"""
                     df_sum_sources = df[source_list].sum(axis = 1)
                     df_sum_sources_numpy = df_sum_sources.to_numpy()
-                    df_branch = pd.DataFrame()
-                    # print(df_sum_sources_numpy)
+                    # df_branch = pd.DataFrame()
+                    # # print(df_sum_sources_numpy)
                     for source in source_list:
                         df_source_numpy = df[source].to_numpy()
                         for sink in sink_list:
                             df_sink_numpy = df[sink].to_numpy()
                             df_temp_numpy = df_sink_numpy * df_source_numpy / df_sum_sources_numpy
-                            # print(df_temp_numpy.shape)
-                            branch_name = str(source + "_" + sink).split()
-                            # print()
-                            df_temp = pd.DataFrame(df_temp_numpy, columns = branch_name)
-                            # print(df_temp.head())
-                            df_branch = pd.concat([df_branch, df_temp], axis=1)
-                    print(df_branch.head())
+                            df_temp_numpy_rms = np.sqrt(np.mean(np.square(df_temp_numpy)))
+                            source_details = source.lstrip('i').rstrip(')').replace("I1", "").replace("(", "").split(".")
+                            sink_details = sink.lstrip('i').rstrip(')').replace("I1", "").replace("(", "").split(".")
+                            source_details.reverse()
+                            sink_details.reverse()
+                            logging.info("Branch: {} >> {} " .format(source_details, sink_details))
+                            temp_list = source_details + sink_details
+                            temp_list.append(df_temp_numpy_rms)
+                            net.branchcurrents.append(temp_list)
+    return subcircuit_list
 
+def get_branch_current_from_verilog(design, modulelist, net_from_spice, branchcurrents_from_spice):
+    cfconst_for_each_net = list()
+    for module in modulelist:
+        if module.name == design:
+            for net in module.netlist:
+                if net.isundertest and net.name == net_from_spice:
+                    device_list = list()
+                    for connection in net.connections:
+                            device_list.append(connection[0].split('_'))
+                    # print(device_list)
+                    for branchcurrent in branchcurrents_from_spice:
+                        # print(branchcurrent)
+                        block_id1 = -99
+                        block_id2 = -98
+                        for i, item in enumerate(device_list):
+                            # print(item)
+                            if branchcurrent[0] in item:
+                                block_id1 = i
+                            if branchcurrent[2] in item:
+                                block_id2 = i
+                        if block_id1 > -1 and block_id2 > -1:
+                            if not block_id1 == block_id2:
+                                str1 = net.connections[block_id1][0] + "/" + net.connections[block_id1][1]
+                                str2 = net.connections[block_id2][0] + "/" + net.connections[block_id2][1]
+                                cfconst_for_each_net.append(net.name + " " + str1 + " " + str2 + " " + str(abs(branchcurrent[4])))
 
+    return cfconst_for_each_net
+
+def prepare_cfconst(design, cfconst):
+    tc_directory = "/testcase_" + design + "/"
+    cfconstfile = design + ".cfconst"
+
+    with open(WORK_DIR + tc_directory + cfconstfile, 'w') as fcfconst:
+        for net_constraints in cfconst:
+            for const in net_constraints:
+                fcfconst.write("{}\n" .format(str(const)))
 
 def main():
+    cfconst = list()
     logging.info('Starting ChargeFlow...')
     subcircuit_list = extract_spice_netlist(args.design)
     modulelist = extract_verilog_netlist(args.design)
     prepare_print_statement(args.design, subcircuit_list)
     generate_tran_data(args.design)
-    extract_print_file(args.design, subcircuit_list)
-    # modulelist = prepare_cfconst(args.design, modulelist)
-    # for item in modulelist:
-    #     logging.info("Module Details:\n{}" .format(item))
-    # subcircuit_list = extract_spice_netlist(args.design)
-    # # export_count = prepare_mdlfile(args.design, subcircuit_list)
-    # export_count = 8
-    # run_simulation(args.design, export_count)
-    # subcircuit_list = get_pin_current_for_nets(args.design, subcircuit_list)
-    # subcircuit_list = get_pin_to_pin_current(args.design, subcircuit_list)
-    # get_pin_to_pin_current_for_verilog(args.design, modulelist, subcircuit_list)
-    # for item in subcircuit_list:
-    #     print(item)
+    subcircuit_list = generate_branch_current_from_spice(args.design, subcircuit_list)
+    for subcircuit in subcircuit_list:
+        if subcircuit.name == args.design:
+            for net in subcircuit.netlist:
+                if net.isundertest:
+                    cfconst.append(get_branch_current_from_verilog(args.design, modulelist, net.name, net.branchcurrents))
+    # print(cfconst)
+    logging.info("ChargeFlow Constraints:\n")
+    for net_constraints in cfconst:
+        for const in net_constraints:
+            logging.info("{}" .format(str(const)))
+    prepare_cfconst(args.design, cfconst)
 
 
 if __name__ == "__main__":
