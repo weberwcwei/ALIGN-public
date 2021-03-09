@@ -1,5 +1,3 @@
-#!/scratch/anaconda/bin/python3
-
 import logging
 import argparse
 import timeit
@@ -9,7 +7,6 @@ import itertools
 import math
 import re
 import numpy as np
-import csv
 
 from utils.classdesc import primitive, module, transistor, passive, net, subcircuit
 
@@ -350,11 +347,13 @@ def get_pin_to_pin_current_for_verilog(design, modulelist, subcircuit_list):
             # print(branch[1][0])
             # print(d1_list)
             # print(d2_list)
+            # breakpoint()
             if branch[0][0] in d1_list and branch[1][0] in d2_list:
                 weight = weight + branch[2]
             elif branch[0][0] in d2_list and branch[1][0] in d1_list:
                 weight = weight - branch[2]
             # print(weight)
+            # breakpoint()
         item.append(abs(weight))
     print(modulelist[module_id].branch_under_test)
 
@@ -523,7 +522,7 @@ def prepare_cfconst(design, cfconst):
             for const in net_constraints:
                 fcfconst.write("{}\n" .format(str(const)))
 
-def generate_branch_current_at_each_time_stamp(design, subcircuit_list):
+def generate_branch_current_at_each_time_stamp(subcircuit_list):
     """
     This function estimates branch current from pin to pin for each time
     stamp of transient simulation. In the process, it considers each point in
@@ -531,85 +530,34 @@ def generate_branch_current_at_each_time_stamp(design, subcircuit_list):
     branch current from source to sink for that point.
 
     """
-    tc_directory = "/testcase_" + design + "/"
+    # df = pd.read_csv(WORK_DIR + tc_directory + "pin_currents_new.csv", delimiter=":")
+    # df = df.astype(float).multiply(-1)
+    # # print(df.columns)
+    #
+    # """Create branch currents from pin currents"""
+    # for subcircuit in subcircuit_list:
+    #     if subcircuit.name == design:
+    #         for net in subcircuit.netlist:
+    #             if net.isundertest:
+    #                 clmns_under_test = list()
+    #                 source_list = list()
+    #                 sink_list = list()
+    #                 """Decide source and sink pins of the net under test"""
+    #                 for connection in net.connections:
+    #                     clmns_under_test.append("i" + connection[1] + "(I1." + connection[0] + ")")
+    #                 df_under_test = df[clmns_under_test]
     for subcircuit in subcircuit_list:
         if subcircuit.name == design:
-            all_branch_currents_df = pd.DataFrame()
             for net in subcircuit.netlist:
                 if net.isundertest:
                     clmns_under_test = list()
                     for connection in net.connections:
-                        clmns_under_test.append("i" + connection[1] \
-                                                + "(I1." + connection[0] + ")")
-                    logging.info("For net {}, columns under test: {}\n"
-                                 .format(net.name, clmns_under_test))
-                    # print("For net {}, columns under test: {}\n"
-                    #              .format(net.name, clmns_under_test))
-                    temp_branches_under_test = itertools.combinations(clmns_under_test, 2)
-                    branch_current_under_test = list()
-                    for item in temp_branches_under_test:
-                        branch_current_under_test.append("_".join(item))
-                    branch_current_under_test_dict = dict.fromkeys(branch_current_under_test, 0)
-                    branch_current_under_test_df = pd.DataFrame(columns = branch_current_under_test)
-                    # print(branch_current_under_test_dict)
-                    # print(branch_current_under_test_df)
-                    logging.info("Branches:\n{}\n" .format(branch_current_under_test))
-
+                        clmns_under_test.append("i" + connection[1] + "(I1." + connection[0] + ")")
                     with open(WORK_DIR + tc_directory + "pin_currents_new.csv") as fpincurrents:
                         reader = csv.DictReader(fpincurrents, delimiter = ':')
                         for row in reader:
-                            # print(row)
-                            source_list = list()
-                            sink_list = list()
-                            total_current = 0
-                            for item in clmns_under_test:
-                                # print("item: {}, value: {}" .format(item, row[item]))
-                                if float(row[item]) < 0:
-                                    sink_list.append(item)
-                                elif float(row[item]) >= 0:
-                                    source_list.append(item)
-                                    total_current = total_current + float(row[item])
-                                else:
-                                    pass
-                            # print("{}:" .format(net.name))
-                            # print("Sources: {}, Sinks: {}, Current: {}"
-                            #       .format(source_list, sink_list, total_current))
-
-                            for source in source_list:
-                                for sink in sink_list:
-                                    temp_branch_current = abs(float(row[sink])*float(row[source])/total_current)
-                                    if source + "_" + sink in branch_current_under_test:
-                                        branch_current_under_test_dict[source + "_" + sink] = temp_branch_current
-                                    elif sink + "_" + source in branch_current_under_test:
-                                        branch_current_under_test_dict[sink + "_" + source] = temp_branch_current
-                                    else:
-                                        pass
-                            # print(branch_current_under_test_dict)
-                            branch_current_under_test_df = branch_current_under_test_df.append(
-                                                        branch_current_under_test_dict,
-                                                        ignore_index = True)
-                    for item in branch_current_under_test_df.columns:
-                        # temp_array = branch_current_under_test_df[item].to_numpy()
-                        temp_rms = np.sqrt(np.mean(np.square(branch_current_under_test_df[item].to_numpy())))
-                        logging.info("Branch: {}, RMS current: {}" .format(item, temp_rms))
-                        source_details = item.split('_')[0].lstrip('i').rstrip(')').replace("I1", "").replace("(", "").split(".")
-                        sink_details = item.split('_')[1].lstrip('i').rstrip(')').replace("I1", "").replace("(", "").split(".")
-                        source_details.reverse()
-                        sink_details.reverse()
-                        logging.info("Branch: {} >> {} " .format(source_details, sink_details))
-                        temp_list = source_details + sink_details
-                        temp_list.append(temp_rms)
-                        net.branchcurrents.append(temp_list)
-                    # print(branch_current_under_test_df)
-                    all_branch_currents_df = pd.concat([all_branch_currents_df,\
-                                                        branch_current_under_test_df],
-                                                        axis = 1 )
-            # print(all_branch_currents_df)
-            all_branch_currents_df.to_csv(WORK_DIR + tc_directory
-                                          + "branch_currents.csv",
-                                           index = False, mode = 'w')
-
-    return subcircuit_list
+                            print(row[clmns_under_test])
+    pass
 
 def main():
     cfconst = list()
@@ -618,8 +566,7 @@ def main():
     modulelist = extract_verilog_netlist(args.design)
     prepare_print_statement(args.design, subcircuit_list)
     generate_tran_data(args.design)
-    # subcircuit_list = generate_branch_current_from_spice(args.design, subcircuit_list)
-    subcircuit_list = generate_branch_current_at_each_time_stamp(args.design, subcircuit_list)
+    subcircuit_list = generate_branch_current_from_spice(args.design, subcircuit_list)
     for subcircuit in subcircuit_list:
         if subcircuit.name == args.design:
             for net in subcircuit.netlist:
