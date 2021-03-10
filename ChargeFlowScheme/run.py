@@ -30,7 +30,7 @@ DEVICE_TYPE_SET = {
     'rmres', 'nfet_b', 'pfet_b',
     }
 # TRANSISTOR_PORTS = {0: "d", 1: "g", 2: "s", 3: "b"}
-TRANSISTOR_PORTS = {0: "1", 1: "3"} # ignoring gate and body connections for now
+TRANSISTOR_PORTS = {0: "1", 1: "2", 2: "3"} # ignoring gate and body connections for now
 # 1:d , 2:g, 3:s, 4:b
 PASSIVE_PORTS = {0: "1", 1: "2"}
 
@@ -113,12 +113,24 @@ def extract_spice_netlist(design):
                     for line in fspice:
                         if line.strip().startswith("m"):
                             list_from_line = line.strip().split()
-                            temp_list_with_drain_source = [list_from_line[1], list_from_line[3]]
+                            # temp_list_with_drain_source = [list_from_line[1], list_from_line[3]]
+                            temp_list_with_drain_source = list_from_line[1:4]
                             device_name = list_from_line[0]
                             for i, pin in enumerate(temp_list_with_drain_source): # ignoring body terminal for now
                                 get_netid = pin_is_in_the_list(pin, netlist)
                                 if get_netid is not None:
                                     netlist[get_netid].connections.append([device_name, TRANSISTOR_PORTS[i]])
+                                    # flag = 0
+                                    # for connection in netlist[get_netid].connections: # The script will just take one connection for each net device combination
+                                    #     if device_name == connection[0]:
+                                    #         flag = 1
+                                    #         break
+                                    #     else:
+                                    #         pass
+                                    # if flag == 0:
+                                    #     netlist[get_netid].connections.append([device_name, TRANSISTOR_PORTS[i]])
+                                    # else:
+                                    #     pass
                                 else:
                                     isundertest = net_is_under_test(pin, nets_under_test)
                                     netlist.append(net(pin, isundertest, netid))
@@ -511,17 +523,78 @@ def get_branch_current_from_verilog(design, modulelist, net_from_spice, branchcu
                                 str1 = net.connections[block_id1][0] + "/" + net.connections[block_id1][1]
                                 str2 = net.connections[block_id2][0] + "/" + net.connections[block_id2][1]
                                 cfconst_for_each_net.append(net.name + " " + str1 + " " + str2 + " " + str(abs(branchcurrent[4])))
+                                flag = 0
+                                for item in net.branchcurrents:
+                                    if item[0] == str1 and item[1] == str2:
+                                        item[2] = item[2] + abs(branchcurrent[4])
+                                        flag = 1
+                                        break
+                                if flag == 0:
+                                    net.branchcurrents.append([str1, str2, abs(branchcurrent[4])])
 
     return cfconst_for_each_net
 
-def prepare_cfconst(design, cfconst):
+def prepare_cfconst(design, modulelist):
     tc_directory = "/testcase_" + design + "/"
     cfconstfile = design + ".cfconst"
+    cfconst = ""
+    for module in modulelist:
+        if module.name == design:
+            for net in module.netlist:
+                if net.isundertest:
+                    for branch in net.branchcurrents:
+                        cfconst = cfconst + net.name + "\t" + branch[0] + "\t" + branch[1] + "\t" + str(branch[2]) + "\n"
+
 
     with open(WORK_DIR + tc_directory + cfconstfile, 'w') as fcfconst:
-        for net_constraints in cfconst:
-            for const in net_constraints:
-                fcfconst.write("{}\n" .format(str(const)))
+        print(cfconst)
+        fcfconst.write(cfconst)
+    return cfconst
+
+def store_pin_currents_in_csv(design, subcircuit_list):
+    """
+    This function just extracts pin current from the transient file generated
+    by the spice transient simulation, does necessary string replacements,
+     and saves the data in csv format.
+    """
+    logging.info("Generating branch currents from spice...")
+    tc_directory = "/testcase_" + design + "/"
+    printfile = design + "_revised_tb.print"
+    os.chdir(WORK_DIR + tc_directory)
+    if os.path.exists(WORK_DIR + tc_directory + "pin_currents.txt"):
+        os.system("rm -f pin_currents.txt")
+    os.system("grep -vwE \"(\*|x|y)\" " + printfile + " > pin_currents.txt" )
+    num_lines = sum(1 for line in open('pin_currents.txt'))
+
+    # with open("pin_currents.txt", 'r') as fpin:
+    blocks_in_transients = open("pin_currents.txt", 'r').read().count("time")
+    # blocks_in_transients = temp.count("time")
+    points_in_transients = int(num_lines/int(blocks_in_transients))
+    logging.info("Blocks in PRINT file: {}" .format(blocks_in_transients))
+    logging.info("Points in PRINT file: {}" .format(points_in_transients))
+
+    """Create a dataframe consisting pin currents"""
+    with open(WORK_DIR + tc_directory + "pin_currents.txt", 'r') as fpinc:
+        lines = fpinc.readlines()
+        rearranged_lines = ""
+        for i in range(points_in_transients):
+            # line = ""
+            for j in range(blocks_in_transients):
+                line_to_read = j*points_in_transients + i
+                lines_string = lines[line_to_read].strip().replace(' m', 'e-3')
+                lines_string = lines_string.replace(' u', 'e-6').replace(' n', 'e-9').replace(' p', 'e-12').replace(' f', 'e-15').replace(' a', 'e-18')
+                templine = re.split(" +", lines_string.strip())
+                if j == 0:
+                    # rearranged_lines = rearranged_lines + ":".join(re.split("  +", lines[line_to_read].strip()))
+                    rearranged_lines = rearranged_lines + ":".join(templine)
+                else:
+                    # print(lines[line_to_read].strip().split('\t'))
+                    # rearranged_lines = rearranged_lines + ":" + ":".join(re.split("  +", lines[line_to_read].strip())[1:])
+                    rearranged_lines = rearranged_lines + ":" + ":".join(templine[1:])
+            rearranged_lines = rearranged_lines + "\n"
+        # print(rearranged_lines)
+    with open(WORK_DIR + tc_directory + "pin_currents_new.csv", 'w') as fpinc:
+        lines = fpinc.writelines(rearranged_lines)
 
 def generate_branch_current_at_each_time_stamp(design, subcircuit_list):
     """
@@ -612,25 +685,24 @@ def generate_branch_current_at_each_time_stamp(design, subcircuit_list):
     return subcircuit_list
 
 def main():
-    cfconst = list()
     logging.info('Starting ChargeFlow...')
     subcircuit_list = extract_spice_netlist(args.design)
     modulelist = extract_verilog_netlist(args.design)
     prepare_print_statement(args.design, subcircuit_list)
     generate_tran_data(args.design)
     # subcircuit_list = generate_branch_current_from_spice(args.design, subcircuit_list)
+    store_pin_currents_in_csv(args.design, subcircuit_list)
     subcircuit_list = generate_branch_current_at_each_time_stamp(args.design, subcircuit_list)
     for subcircuit in subcircuit_list:
         if subcircuit.name == args.design:
             for net in subcircuit.netlist:
                 if net.isundertest:
-                    cfconst.append(get_branch_current_from_verilog(args.design, modulelist, net.name, net.branchcurrents))
+                    get_branch_current_from_verilog(args.design, modulelist, net.name, net.branchcurrents)
     # print(cfconst)
-    logging.info("ChargeFlow Constraints:\n")
-    for net_constraints in cfconst:
-        for const in net_constraints:
-            logging.info("{}" .format(str(const)))
-    prepare_cfconst(args.design, cfconst)
+    cfconst = prepare_cfconst(args.design, modulelist)
+    logging.info("ChargeFlow Constraints:\n{}" .format(cfconst))
+
+
 
 
 if __name__ == "__main__":
