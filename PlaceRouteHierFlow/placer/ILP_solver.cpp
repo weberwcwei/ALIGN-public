@@ -526,27 +526,45 @@ double ILP_solver::CalculateCostFromSim(design& mydesign, SeqPair& curr_sp)
 			}
 		}
 	}
-	map<string, pair<int, int> > pinCoords; 
+	map<string, PnRDB::bbox> pinCoords; 
 	for (auto neti : mydesign.Nets) {
 		if (nets.find(neti.name) == nets.end()) continue;
 		for (auto connectedj : neti.connected) {
 			if (connectedj.type == placerDB::Block) {
 				int iter2 = connectedj.iter2, iter = connectedj.iter;
-				for (auto centerk : mydesign.Blocks[iter2][curr_sp.selected[iter2]].blockPins[iter].center) {
+				PnRDB::bbox box;
+				bool first(true);
+				for (auto& bnd : mydesign.Blocks[iter2][curr_sp.selected[iter2]].blockPins[iter].boundary) {
 					// calculate contact center
-					int pin_x = centerk.x;
-					int pin_y = centerk.y;
-					if (Blocks[iter2].H_flip) pin_x = mydesign.Blocks[iter2][curr_sp.selected[iter2]].width - pin_x;
-					if (Blocks[iter2].V_flip) pin_y = mydesign.Blocks[iter2][curr_sp.selected[iter2]].height - pin_y;
-					pin_x += Blocks[iter2].x;
-					pin_y += Blocks[iter2].y;
-					pinCoords[mydesign.GetBlockName(iter2) + "/" + mydesign.GetBlockPinName(iter2, iter, curr_sp.selected[iter2])] = make_pair(pin_x, pin_y);
+					int x1(INT_MAX), y1(INT_MAX), x2(INT_MIN), y2(INT_MIN);
+					for (auto& pt : bnd.polygon) {
+						int ptx = pt.x, pty = pt.y;
+						if (Blocks[iter2].H_flip) {
+							ptx = mydesign.Blocks[iter2][curr_sp.selected[iter2]].width - ptx;
+						}
+						if (Blocks[iter2].V_flip) {
+							pty = mydesign.Blocks[iter2][curr_sp.selected[iter2]].height - pty;
+						}
+						ptx += Blocks[iter2].x;
+						pty += Blocks[iter2].y;
+						x1 = std::min(ptx, x1);
+						y1 = std::min(pty, y1);
+						x2 = std::max(ptx, x2);
+						y2 = std::max(pty, y2);
+					}
+					if (first) {
+						box = PnRDB::bbox(std::min(x1, x2), std::min(y1, y2), std::max(x1, x2), std::max(y1, y2));
+						first = false;
+					} else {
+						box.unionBox(PnRDB::bbox(std::min(x1, x2), std::min(y1, y2), std::max(x1, x2), std::max(y1, y2)));
+					}
 				}
+				pinCoords[mydesign.GetBlockName(iter2) + "/" + mydesign.GetBlockPinName(iter2, iter, curr_sp.selected[iter2])] = box;
 			}
 		}
 	}
 
-	//for (auto& it : pinCoords) {
+	//for (auto& it : inCoords) {
 	//	logger->info("DEBUG  {0} : {1} {2}", it.first, it.second.first, it.second.second);
 	//}
 
@@ -556,16 +574,29 @@ double ILP_solver::CalculateCostFromSim(design& mydesign, SeqPair& curr_sp)
 		double dist(0.);
 		auto it1 = pinCoords.find(it.first.first);
 		auto it2 = pinCoords.find(it.first.second);
+		PnRDB::bbox b1, b2;
 		if (it1 != pinCoords.end() && it2 != pinCoords.end()) {
-			dist = abs(it1->second.first - it2->second.first) + abs(it1->second.second - it2->second.second);
+			b1 = it1->second;
+			b2 = it2->second;
+			int xprl = std::min(it1->second.UR.x, it2->second.UR.x) - std::max(it1->second.LL.x, it2->second.LL.x);
+			int yprl = std::min(it1->second.UR.y, it2->second.UR.y) - std::max(it1->second.LL.y, it2->second.LL.y);
+			dist = (xprl < 0 ? abs(xprl) : 0) + (yprl < 0 ? abs(yprl) : 0);
 		} else {
 			it1 = pinCoords.find(it.first.second);
 			it2 = pinCoords.find(it.first.first);
 			if (it1 != pinCoords.end() && it2 != pinCoords.end()) {
-				dist = abs(it1->second.first - it2->second.first) + abs(it1->second.second - it2->second.second);
+				b1 = it1->second;
+				b2 = it2->second;
+				int xprl = std::min(it1->second.UR.x, it2->second.UR.x) - std::max(it1->second.LL.x, it2->second.LL.x);
+				int yprl = std::min(it1->second.UR.y, it2->second.UR.y) - std::max(it1->second.LL.y, it2->second.LL.y);
+				dist = (xprl < 0 ? abs(xprl) : 0) + (yprl < 0 ? abs(yprl) : 0);
 			}
 		}
-		cost += dist * it.second;
+		auto dcost = dist * it.second;
+		logger->info("DEBUG_delta_cost_pin_pair : {0} {1} {2} {3} {4}", it.first.first, it.first.second, dist, it.second, dcost);
+		logger->info("DEBUG_delta_cost_pin_pos : {0} {1} {2} {3} {4} {5} {6} {7} {8} {9}", it.first.first, it.first.second,
+				b1.LL.x, b1.LL.y, b1.UR.x, b1.UR.y, b2.LL.x, b2.LL.y, b2.UR.x, b2.UR.y);
+		cost += dcost;
 	}
 	logger->info("DEBUG delta cost : {0}", cost);
 
@@ -576,9 +607,10 @@ double ILP_solver::CalculateCost(design& mydesign, SeqPair& curr_sp) {
 	auto logger = spdlog::default_logger()->clone("placer.cost.Cost");
   ConstGraph const_graph;
   double cost = 0;
-  cost += 0.1 * area;
-  cost += 0.1 * HPWL * const_graph.LAMBDA;
+  //cost += area;
+  //cost += HPWL * const_graph.LAMBDA;
   double match_cost = 0;
+  double cf_cost = 0;
   for (auto mbi : mydesign.Match_blocks) {
     match_cost += abs(Blocks[mbi.blockid1].x + mydesign.Blocks[mbi.blockid1][curr_sp.selected[mbi.blockid1]].width / 2 - Blocks[mbi.blockid2].x -
                       mydesign.Blocks[mbi.blockid2][curr_sp.selected[mbi.blockid2]].width / 2) +
@@ -586,13 +618,18 @@ double ILP_solver::CalculateCost(design& mydesign, SeqPair& curr_sp) {
                       mydesign.Blocks[mbi.blockid2][curr_sp.selected[mbi.blockid2]].height / 2);
   }
   cost += match_cost * const_graph.BETA;
-  cost += ratio * const_graph.SIGMA;
-  cost += dead_area / area * const_graph.PHI;
-  cost += linear_const * const_graph.PI;
-  cost += multi_linear_const * const_graph.PII;
-  logger->info("DEBUG cost oringinal : {0}", cost);
-  cost += CalculateCostFromSim(mydesign, curr_sp);
+  //cost += ratio * const_graph.SIGMA;
+  //cost += dead_area / area * const_graph.PHI;
+  //cost += linear_const * const_graph.PI;
+  //cost += multi_linear_const * const_graph.PII;
+  logger->info("DEBUG cost original : {0}", cost);
+  cf_cost =  CalculateCostFromSim(mydesign, curr_sp);
+  cost += cf_cost;
   logger->info("DEBUG cost after : {0}", cost);
+  logger->info("Cost from area: {0}", area);
+  logger->info("Cost from HPWL: {0}",HPWL * const_graph.LAMBDA);
+  logger->info("Cost from CFflow: {0}", cf_cost);
+  logger->info("DEBUG cost original : {0}", cost);
   return cost;
 }
 

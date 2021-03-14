@@ -408,96 +408,6 @@ def generate_tran_data(design):
     # os.system("sed -i 's/=//' " + design + ".measure")
     # os.chdir(WORK_DIR)
 
-def generate_branch_current_from_spice(design, subcircuit_list):
-    logging.info("Generating branch currents from spice...")
-    tc_directory = "/testcase_" + design + "/"
-    printfile = design + "_revised_tb.print"
-    os.chdir(WORK_DIR + tc_directory)
-    if os.path.exists(WORK_DIR + tc_directory + "pin_currents.txt"):
-        os.system("rm -f pin_currents.txt")
-    os.system("grep -vwE \"(\*|x|y)\" " + printfile + " > pin_currents.txt" )
-    num_lines = sum(1 for line in open('pin_currents.txt'))
-
-    # with open("pin_currents.txt", 'r') as fpin:
-    blocks_in_transients = open("pin_currents.txt", 'r').read().count("time")
-    # blocks_in_transients = temp.count("time")
-    points_in_transients = int(num_lines/float(blocks_in_transients))
-    logging.info("Blocks in PRINT file: {}" .format(blocks_in_transients))
-    logging.info("Points in PRINT file: {}" .format(points_in_transients))
-
-    """Create a dataframe consisting pin currents"""
-    with open(WORK_DIR + tc_directory + "pin_currents.txt", 'r') as fpinc:
-        lines = fpinc.readlines()
-        rearranged_lines = ""
-        for i in range(points_in_transients):
-            # line = ""
-            for j in range(blocks_in_transients):
-                line_to_read = j*points_in_transients + i
-                templine = re.split("  +", lines[line_to_read].strip())
-                templine = [sub.replace(' m', 'e-3') for sub in templine]
-                templine = [sub.replace(' u', 'e-6') for sub in templine]
-                templine = [sub.replace(' n', 'e-9') for sub in templine]
-                templine = [sub.replace(' p', 'e-12') for sub in templine]
-                templine = [sub.replace(' f', 'e-15') for sub in templine]
-                if j == 0:
-                    # rearranged_lines = rearranged_lines + ":".join(re.split("  +", lines[line_to_read].strip()))
-                    rearranged_lines = rearranged_lines + ":".join(templine)
-                else:
-                    # print(lines[line_to_read].strip().split('\t'))
-                    # rearranged_lines = rearranged_lines + ":" + ":".join(re.split("  +", lines[line_to_read].strip())[1:])
-                    rearranged_lines = rearranged_lines + ":" + ":".join(templine[1:])
-            rearranged_lines = rearranged_lines + "\n"
-        # print(rearranged_lines)
-    with open(WORK_DIR + tc_directory + "pin_currents_new.csv", 'w') as fpinc:
-        lines = fpinc.writelines(rearranged_lines)
-    # with open(WORK_DIR + tc_directory + "pin_currents_new.csv", 'r') as fpinc:
-    df = pd.read_csv(WORK_DIR + tc_directory + "pin_currents_new.csv", delimiter=":")
-    df = df.astype(float).multiply(-1)
-    # print(df.columns)
-
-    """Create branch currents from pin currents"""
-    for subcircuit in subcircuit_list:
-        if subcircuit.name == design:
-            for net in subcircuit.netlist:
-                if net.isundertest:
-                    clmns_under_test = list()
-                    source_list = list()
-                    sink_list = list()
-                    """Decide source and sink pins of the net under test"""
-                    for connection in net.connections:
-                        clmns_under_test.append("i" + connection[1] + "(I1." + connection[0] + ")")
-                    df_under_test = df[clmns_under_test]
-                    for item in clmns_under_test:
-                        # print(df_under_test[item].mean())
-                        if df_under_test[item].mean() < 0:
-                            sink_list.append(item)
-                        elif df_under_test[item].mean() > 0:
-                            source_list.append(item)
-                        else:
-                            pass
-                    logging.info("{}:\n" .format(net.name))
-                    logging.info("Sources: {}, Sinks: {}" .format(source_list, sink_list))
-                    """Decide source and sink pins of the net under test"""
-                    df_sum_sources = df[source_list].sum(axis = 1)
-                    df_sum_sources_numpy = df_sum_sources.to_numpy()
-                    # df_branch = pd.DataFrame()
-                    # # print(df_sum_sources_numpy)
-                    for source in source_list:
-                        df_source_numpy = df[source].to_numpy()
-                        for sink in sink_list:
-                            df_sink_numpy = df[sink].to_numpy()
-                            df_temp_numpy = df_sink_numpy * df_source_numpy / df_sum_sources_numpy
-                            df_temp_numpy_rms = np.sqrt(np.mean(np.square(df_temp_numpy)))
-                            source_details = source.lstrip('i').rstrip(')').replace("I1", "").replace("(", "").split(".")
-                            sink_details = sink.lstrip('i').rstrip(')').replace("I1", "").replace("(", "").split(".")
-                            source_details.reverse()
-                            sink_details.reverse()
-                            logging.info("Branch: {} >> {} " .format(source_details, sink_details))
-                            temp_list = source_details + sink_details
-                            temp_list.append(df_temp_numpy_rms)
-                            net.branchcurrents.append(temp_list)
-    return subcircuit_list
-
 def get_branch_current_from_verilog(design, modulelist, net_from_spice, branchcurrents_from_spice):
     cfconst_for_each_net = list()
     for module in modulelist:
@@ -531,6 +441,9 @@ def get_branch_current_from_verilog(design, modulelist, net_from_spice, branchcu
                                         break
                                 if flag == 0:
                                     net.branchcurrents.append([str1, str2, abs(branchcurrent[4])])
+
+                                ### Changes from here
+
 
     return cfconst_for_each_net
 
@@ -637,24 +550,25 @@ def generate_branch_current_at_each_time_stamp(design, subcircuit_list):
                             total_current = 0
                             for item in clmns_under_test:
                                 # print("item: {}, value: {}" .format(item, row[item]))
-                                if float(row[item]) < 0:
+                                if float(row[item]) > 0: # In transient data of spice, if a current goes in of  a pin, it is shown with positive value. However, the pin is acting as a sink.
                                     sink_list.append(item)
-                                elif float(row[item]) >= 0:
+                                elif float(row[item]) <= 0: # In transient data of spice, if a current goes out of  a pin, it is shown with negative value. However, the pin is acting as a source.
                                     source_list.append(item)
-                                    total_current = total_current + float(row[item])
+                                    total_current = total_current + -1*float(row[item])
                                 else:
                                     pass
                             # print("{}:" .format(net.name))
                             # print("Sources: {}, Sinks: {}, Current: {}"
                             #       .format(source_list, sink_list, total_current))
+                            # breakpoint()
 
                             for source in source_list:
                                 for sink in sink_list:
-                                    temp_branch_current = abs(float(row[sink])*float(row[source])/total_current)
+                                    temp_branch_current = float(row[sink])*float(row[source])/total_current
                                     if source + "_" + sink in branch_current_under_test:
                                         branch_current_under_test_dict[source + "_" + sink] = temp_branch_current
                                     elif sink + "_" + source in branch_current_under_test:
-                                        branch_current_under_test_dict[sink + "_" + source] = temp_branch_current
+                                        branch_current_under_test_dict[sink + "_" + source] = -1*temp_branch_current
                                     else:
                                         pass
                             # print(branch_current_under_test_dict)
@@ -671,7 +585,7 @@ def generate_branch_current_at_each_time_stamp(design, subcircuit_list):
                         sink_details.reverse()
                         logging.info("Branch: {} >> {} " .format(source_details, sink_details))
                         temp_list = source_details + sink_details
-                        temp_list.append(temp_rms)
+                        # temp_list.append(temp_rms)
                         net.branchcurrents.append(temp_list)
                     # print(branch_current_under_test_df)
                     all_branch_currents_df = pd.concat([all_branch_currents_df,\
@@ -682,27 +596,133 @@ def generate_branch_current_at_each_time_stamp(design, subcircuit_list):
                                           + "branch_currents.csv",
                                            index = False, mode = 'w')
 
+    # df_test = pd.read_csv(WORK_DIR + tc_directory + "pin_currents_new.csv", delimiter= ':', usecols=['time'])
+    # print("Delta t:\n")
+    # print(df_test[0:].head())
+    # print(df_test[1:-1].head())
+    # temp_np_array = df_test[0:-1].values - df_test[1:].values
+    # print(temp_np_array)
+
     return subcircuit_list
+
+def get_branch_current_for_verilog_at_each_time_stamp(WORK_DIR, design, modulelist, net_from_spice, branchcurrents_from_spice):
+    logging.info("Calculating branch currents for verilog...")
+    tc_directory = "/testcase_" + design + "/"
+    all_branch_currents_spice_df = pd.read_csv(WORK_DIR + tc_directory + "branch_currents.csv")
+    all_branch_currents_verilog_df = pd.DataFrame()
+    cfconst_for_each_net = list()
+    for module in modulelist:
+        if module.name == design:
+            for net in module.netlist:
+                if net.isundertest and net.name == net_from_spice:
+                    device_list = list()
+                    for connection in net.connections:
+                            device_list.append(connection[0].split('_'))
+                    # # print(device_list)
+                    for branchcurrent in branchcurrents_from_spice:
+                        # print(branchcurrent)
+                        block_id1 = -99
+                        block_id2 = -98
+                        for i, item in enumerate(device_list):
+                            # print(item)
+                            if branchcurrent[0] in item:
+                                block_id1 = i
+                            if branchcurrent[2] in item:
+                                block_id2 = i
+                        if block_id1 > -1 and block_id2 > -1:
+                            if not block_id1 == block_id2:
+                                str1 = net.connections[block_id1][0] + "/" + net.connections[block_id1][1]
+                                str2 = net.connections[block_id2][0] + "/" + net.connections[block_id2][1]
+                                str3 = net.name + "-" + str1 + "-" + str2
+                                str4 = net.name + "-" + str2 + "-" + str1
+                                str5 = "i" + branchcurrent[1] + "(I1." + branchcurrent[0] + ")_" + "i" + branchcurrent[3] + "(I1." + branchcurrent[2] + ")"
+                                new_df = all_branch_currents_spice_df[[str5]]
+                                # print(str5)
+                                # print(new_df)
+                                # new_df = new_df.rename(columns = {str5: str3})
+                                # print("New dataframe:\n{}" .format(new_df))
+                                if str3 in all_branch_currents_verilog_df.columns:
+                                    new_df = new_df.rename(columns = {str5: str3})
+                                    sum = all_branch_currents_verilog_df[str3] + new_df[str3]
+                                    all_branch_currents_verilog_df[str3] = sum
+                                    # print("Branch current after addition:\n{}" .format(all_branch_currents_verilog_df))
+                                    # print(all_branch_currents_verilog_df)
+                                    pass
+                                elif str4 in all_branch_currents_verilog_df.columns:
+                                    new_df = new_df.rename(columns = {str5: str4})
+                                    sum = all_branch_currents_verilog_df[str4] + (-1)*new_df[str4]
+                                    all_branch_currents_verilog_df[str4] = sum
+                                    # print("Branch current after addition:\n{}" .format(all_branch_currents_verilog_df))
+                                    # print(all_branch_currents_verilog_df)
+                                    pass
+                                else:
+                                    new_df = new_df.rename(columns = {str5: str3})
+                                    all_branch_currents_verilog_df = pd.concat([all_branch_currents_verilog_df, new_df], axis = 1)
+                                    # print("Branch current after append:\n{}" .format(all_branch_currents_verilog_df))
+                                    # print(all_branch_currents_verilog_df)
+                    # all_branch_currents_verilog_df.to_csv(WORK_DIR + tc_directory
+                    #                       + "branch_currents_verilog.csv",
+                    #                        index = False, mode = 'w')
+                    for item in all_branch_currents_verilog_df.columns:
+                        # print(item)
+                        netname, prim1, prim2 = item.split('-')
+                        rms_current = np.sqrt(np.mean(np.square(all_branch_currents_verilog_df[item].to_numpy())))
+                        templist = [prim1, prim2, rms_current]
+                        # print("{} {} {}" .format(templist, netname, rms_current))
+                        net.branchcurrents.append(templist)
+    # return modulelist
+
+def purge(design):
+    logging.info("Purging...")
+    tc_directory = "/testcase_" + design + "/"
+    for f in os.listdir(WORK_DIR + tc_directory):
+        if re.search("pin_currents*", f) or \
+           re.search("branch_currents*", f) or \
+           re.search(design + "_tb.print", f) or \
+           re.search(design + "_revised_tb.print", f):
+            os.remove(os.path.join(WORK_DIR + tc_directory, f))
+
+def display_constraints_after_sort(design):
+    # logging.info("Calculating branch currents for verilog...")
+    tc_directory = "/testcase_" + design + "/"
+    all_constraints = pd.read_csv(WORK_DIR + tc_directory + design + ".cfconst", header = None, delimiter = '\s+')
+    all_constraints.columns = ["Net", "Pin1", "Pin2", "RMS"]
+    all_constraints = all_constraints.sort_values(by=['RMS'], ascending = False)
+    print(all_constraints)
+
 
 def main():
     logging.info('Starting ChargeFlow...')
+    purge(args.design)
     subcircuit_list = extract_spice_netlist(args.design)
     modulelist = extract_verilog_netlist(args.design)
     prepare_print_statement(args.design, subcircuit_list)
     generate_tran_data(args.design)
-    # subcircuit_list = generate_branch_current_from_spice(args.design, subcircuit_list)
     store_pin_currents_in_csv(args.design, subcircuit_list)
     subcircuit_list = generate_branch_current_at_each_time_stamp(args.design, subcircuit_list)
     for subcircuit in subcircuit_list:
         if subcircuit.name == args.design:
             for net in subcircuit.netlist:
                 if net.isundertest:
-                    get_branch_current_from_verilog(args.design, modulelist, net.name, net.branchcurrents)
-    # print(cfconst)
+                    # get_branch_current_from_verilog(args.design, modulelist, net.name, net.branchcurrents)
+                    get_branch_current_for_verilog_at_each_time_stamp(WORK_DIR, args.design, modulelist, net.name, net.branchcurrents)
+    # # print(cfconst)
     cfconst = prepare_cfconst(args.design, modulelist)
     logging.info("ChargeFlow Constraints:\n{}" .format(cfconst))
-
-
+    display_constraints_after_sort(args.design)
+    # print("From spice:")
+    # for subcircuit in subcircuit_list:
+    #     if subcircuit.name == args.design:
+    #         for net in subcircuit.netlist:
+    #             if net.isundertest:
+    #                 print(net)
+    #
+    # print("From verilog:")
+    # for module in modulelist:
+    #     if module.name == args.design:
+    #         for net in module.netlist:
+    #             if net.isundertest:
+    #                 print(net)
 
 
 if __name__ == "__main__":

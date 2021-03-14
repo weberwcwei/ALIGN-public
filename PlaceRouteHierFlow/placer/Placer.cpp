@@ -518,6 +518,7 @@ std::map<double, std::pair<SeqPair, ILP_solver>> Placer::PlacementCoreAspectRati
                                                                                       int nodeSize, int effort, PnRDB::Drc_info& drcInfo) {
 
   auto logger = spdlog::default_logger()->clone("placer.Placer.PlacementCoreAspectRatio_ILP");
+  logger->info("mode : {0}", mode);
 
   // Mode 0: graph bias; Mode 1: graph bias + net margin; Others: no bias/margin
   // cout<<"PlacementCore\n";
@@ -547,6 +548,7 @@ std::map<double, std::pair<SeqPair, ILP_solver>> Placer::PlacementCoreAspectRati
   float per = 0.1;
   int updateThrd = 100;
   float total_update_number = log(T_MIN / T_INT) / log(ALPHA);
+  unsigned cnt(0);
   while (T > T_MIN) {
     int i = 1;
     int MAX_Iter = 1;
@@ -639,6 +641,7 @@ std::map<double, std::pair<SeqPair, ILP_solver>> Placer::PlacementCoreAspectRati
         }
         if (Smark) {
           //std::cout << "cost: " << trial_cost << std::endl;
+			logger->info("trial_cost : {0} {1} {2}", cnt, trial_cost, T);
           curr_cost = trial_cost;
           curr_sp = trial_sp;
           curr_sol = trial_sol;
@@ -649,6 +652,7 @@ std::map<double, std::pair<SeqPair, ILP_solver>> Placer::PlacementCoreAspectRati
           //}
         }
       }
+	++cnt;
 
 #endif
 
