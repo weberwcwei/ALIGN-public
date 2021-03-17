@@ -503,35 +503,35 @@ double ILP_solver::GenerateValidSolution(design& mydesign, SeqPair& curr_sp, PnR
 double ILP_solver::CalculateCostFromSim(design& mydesign, SeqPair& curr_sp)
 {
 	auto logger = spdlog::default_logger()->clone("placer.cost.Cost");
-<<<<<<< HEAD
-	set<string> nets;
-	if (PinPairWeights.empty()) {
-		char* sideload = getenv("COST_FROM_SIM");
-		string slf;
-		if (sideload) {
-			slf = sideload;
-			ifstream ifs(slf);
-			if (ifs) {
-				string tmps1, tmps2;
-				double wt(0.);
-				while (ifs) {
-					ifs >> tmps1;
-					nets.insert(tmps1);
-					ifs >> tmps1 >> tmps2 >> wt;
-					PinPairWeights[make_pair(tmps1, tmps2)] = wt;
-				}
-			}
-			ifs.close();
-
-			for (auto& it : PinPairWeights) {
-				logger->info("DEBUG pins {0} {1} {2}", it.first.first, it.first.second, it.second);
-			}
-		}
-	}
+// <<<<<<< HEAD
+// 	set<string> nets;
+// 	if (PinPairWeights.empty()) {
+// 		char* sideload = getenv("COST_FROM_SIM");
+// 		string slf;
+// 		if (sideload) {
+// 			slf = sideload;
+// 			ifstream ifs(slf);
+// 			if (ifs) {
+// 				string tmps1, tmps2;
+// 				double wt(0.);
+// 				while (ifs) {
+// 					ifs >> tmps1;
+// 					nets.insert(tmps1);
+// 					ifs >> tmps1 >> tmps2 >> wt;
+// 					PinPairWeights[make_pair(tmps1, tmps2)] = wt;
+// 				}
+// 			}
+// 			ifs.close();
+//
+// 			for (auto& it : PinPairWeights) {
+// 				logger->info("DEBUG pins {0} {1} {2}", it.first.first, it.first.second, it.second);
+// 			}
+// 		}
+// 	}
+// 	map<string, PnRDB::bbox> pinCoords;
+// =======
 	map<string, PnRDB::bbox> pinCoords;
-=======
-	map<string, PnRDB::bbox> pinCoords;
->>>>>>> 5b8999932e6f9ca9634be2d7e600f085aa21b10b
+// >>>>>>> 5b8999932e6f9ca9634be2d7e600f085aa21b10b
 	for (auto neti : mydesign.Nets) {
 		if (!mydesign.IsNetInCF(neti.name))  continue;
 		for (auto connectedj : neti.connected) {
