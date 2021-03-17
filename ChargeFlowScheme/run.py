@@ -460,7 +460,7 @@ def prepare_cfconst(design, modulelist):
 
 
     with open(WORK_DIR + tc_directory + cfconstfile, 'w') as fcfconst:
-        print(cfconst)
+        # print(cfconst)
         fcfconst.write(cfconst)
     return cfconst
 
@@ -518,9 +518,9 @@ def generate_branch_current_at_each_time_stamp(design, subcircuit_list):
 
     """
     tc_directory = "/testcase_" + design + "/"
+    all_branch_currents_df = pd.read_csv(WORK_DIR + tc_directory + "pin_currents_new.csv", delimiter= ':', usecols=['time'])
     for subcircuit in subcircuit_list:
         if subcircuit.name == design:
-            all_branch_currents_df = pd.DataFrame()
             for net in subcircuit.netlist:
                 if net.isundertest:
                     clmns_under_test = list()
@@ -659,15 +659,31 @@ def get_branch_current_for_verilog_at_each_time_stamp(WORK_DIR, design, moduleli
                                     new_df = new_df.rename(columns = {str5: str3})
                                     all_branch_currents_verilog_df = pd.concat([all_branch_currents_verilog_df, new_df], axis = 1)
                                     # print("Branch current after append:\n{}" .format(all_branch_currents_verilog_df))
-                                    # print(all_branch_currents_verilog_df)
-                    # all_branch_currents_verilog_df.to_csv(WORK_DIR + tc_directory
-                    #                       + "branch_currents_verilog.csv",
-                    #                        index = False, mode = 'w')
+                    if not all_branch_currents_verilog_df.empty:
+                        if not os.path.exists(WORK_DIR + tc_directory + "branch_currents_verilog.csv"):
+                            temp_df = all_branch_currents_spice_df["time"]
+                            temp_df = pd.concat([temp_df, all_branch_currents_verilog_df], axis = 1)
+                            temp_df.to_csv(WORK_DIR + tc_directory
+                                                  + "branch_currents_verilog.csv",
+                                                   index = False, mode = 'w')
+                            # breakpoint()
+                        else:
+                            temp_df = pd.read_csv(WORK_DIR + tc_directory + "branch_currents_verilog.csv")
+                            temp_df = pd.concat([temp_df, all_branch_currents_verilog_df], axis = 1)
+                            # print(temp_df.head())
+                            temp_df.to_csv(WORK_DIR + tc_directory
+                                                  + "branch_currents_verilog.csv",
+                                                   index = False, mode = 'w')
                     for item in all_branch_currents_verilog_df.columns:
-                        # print(item)
                         netname, prim1, prim2 = item.split('-')
+                        squared_current = np.square(all_branch_currents_verilog_df[item].to_numpy())
+                        time = all_branch_currents_spice_df["time"].to_numpy()
+                        delta_time = time[1:] - time[0:-1]
+                        area_of_the_transient = np.sum(0.5*(np.multiply(squared_current[1:] + squared_current[0:-1], delta_time)))
+                        rms_current_from_int = np.sqrt(area_of_the_transient/(time[-1] - time[0]))
                         rms_current = np.sqrt(np.mean(np.square(all_branch_currents_verilog_df[item].to_numpy())))
-                        templist = [prim1, prim2, rms_current]
+                        templist = [prim1, prim2, rms_current_from_int]
+                        # print("RMS current regular: {}, RMS current from area: {}" .format(rms_current, rms_current_from_int))
                         # print("{} {} {}" .format(templist, netname, rms_current))
                         net.branchcurrents.append(templist)
     # return modulelist
