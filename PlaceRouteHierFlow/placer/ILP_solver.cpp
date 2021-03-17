@@ -45,7 +45,7 @@ void ILP_solver::lpsolve_logger(lprec* lp, void* userhandle, char* buf) {
 }
 
 double ILP_solver::GenerateValidSolution(design& mydesign, SeqPair& curr_sp, PnRDB::Drc_info& drcInfo) {
-  
+
   auto logger = spdlog::default_logger()->clone("placer.ILP_solver.GenerateValidSolution");
 
   // each block has 4 vars, x, y, H_flip, V_flip;
@@ -526,7 +526,7 @@ double ILP_solver::CalculateCostFromSim(design& mydesign, SeqPair& curr_sp)
 			}
 		}
 	}
-	map<string, PnRDB::bbox> pinCoords; 
+	map<string, PnRDB::bbox> pinCoords;
 	for (auto neti : mydesign.Nets) {
 		if (nets.find(neti.name) == nets.end()) continue;
 		for (auto connectedj : neti.connected) {
@@ -607,8 +607,8 @@ double ILP_solver::CalculateCost(design& mydesign, SeqPair& curr_sp) {
 	auto logger = spdlog::default_logger()->clone("placer.cost.Cost");
   ConstGraph const_graph;
   double cost = 0;
-  //cost += area;
-  //cost += HPWL * const_graph.LAMBDA;
+  cost += area;
+  cost += HPWL * const_graph.LAMBDA;
   double match_cost = 0;
   double cf_cost = 0;
   for (auto mbi : mydesign.Match_blocks) {
@@ -618,8 +618,8 @@ double ILP_solver::CalculateCost(design& mydesign, SeqPair& curr_sp) {
                       mydesign.Blocks[mbi.blockid2][curr_sp.selected[mbi.blockid2]].height / 2);
   }
   cost += match_cost * const_graph.BETA;
-  //cost += ratio * const_graph.SIGMA;
-  //cost += dead_area / area * const_graph.PHI;
+  cost += ratio * const_graph.SIGMA;
+  cost += dead_area / area * const_graph.PHI;
   //cost += linear_const * const_graph.PI;
   //cost += multi_linear_const * const_graph.PII;
   logger->info("DEBUG cost original : {0}", cost);
@@ -627,9 +627,11 @@ double ILP_solver::CalculateCost(design& mydesign, SeqPair& curr_sp) {
   cost += cf_cost;
   logger->info("DEBUG cost after : {0}", cost);
   logger->info("Cost from area: {0}", area);
-  logger->info("Cost from HPWL: {0}",HPWL * const_graph.LAMBDA);
+  logger->info("Cost from HPWL: {0}", HPWL * const_graph.LAMBDA);
+  logger->info("Cost from ratio: {0}", ratio * const_graph.SIGMA);
+  logger->info("Cost from dead_area: {0}", dead_area / area * const_graph.PHI);
   logger->info("Cost from CFflow: {0}", cf_cost);
-  logger->info("DEBUG cost original : {0}", cost);
+  //logger->info("DEBUG cost original : {0}", cost);
   return cost;
 }
 
