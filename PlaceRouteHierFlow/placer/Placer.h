@@ -55,6 +55,8 @@ class Placer {
     Placer(std::vector<PnRDB::hierNode>& nodeVec, string opath, int effort, PnRDB::Drc_info& drcInfo);
     //Placer(PnRDB::hierNode& input_node); // Constructor
     //PnRDB::hierNode CheckoutHierNode(); // Output hier Node after placement
+	ofstream _debugCostCompStream, _debugCFCompStream;
+	~Placer();
 };
 
 #endif

@@ -3,6 +3,7 @@
 
 #include <queue>
 #include <set>
+#include <map>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -22,6 +23,8 @@ using std::ofstream;
 using std::endl;
 using std::cout;
 using std::cerr;
+using std::set;
+using std::map;
 
 class design
 {
@@ -150,12 +153,20 @@ class design
       //int distance;
       //int horizon; // 1 is h, 0 is v.
     };
-    
+
     vector<Abument> Abument_blocks;
     vector<MatchBlock> Match_blocks;
     int bias_Hgraph;
     int bias_Vgraph;
     bool mixFlag;
+
+	struct CFData {
+		set<string> _nets;
+		map<pair<string, string>, double> _pinPairWeights;
+	};
+
+	CFData _cfdata;
+    
     void readRandConstFile(string random_const_file);
     //above is added by yg
 
@@ -174,6 +185,8 @@ class design
     int GetSizeSymGroup4PartMove(int mode);
     int GetSizeSymGroup4FullMove(int mode);
     int GetSizeBlock4Move(int mode);
+
+	void readCFConstraints();
   public:
     design();
     design(PnRDB::hierNode& node);
@@ -242,6 +255,10 @@ class design
     PnRDB::bbox GetPlacedBlockInterMetalAbsBox(int blockid, placerDB::Omark ort, PnRDB::bbox& originBox, placerDB::point LL, int sel); 
     PnRDB::point GetPlacedBlockInterMetalAbsPoint(int blockid, placerDB::Omark ort, PnRDB::point& originP, placerDB::point LL, int sel);
     PnRDB::point GetPlacedBlockInterMetalRelPoint(int blockid, placerDB::Omark ort, PnRDB::point& originP, int sel);
+
+	const bool IsNetInCF(const string& name) { return _cfdata._nets.find(name) != _cfdata._nets.end(); }
+	const map<pair<string, string>, double>& GetCFPinPairWeights() const { return _cfdata._pinPairWeights; }
+	string _costComponents, _costHeader, _cfCostComponents, _cfCostHeader;
 };
 
 #endif

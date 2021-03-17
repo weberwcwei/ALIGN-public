@@ -1,4 +1,5 @@
 #include "ILP_solver.h"
+#include <regex>
 
 ILP_solver::ILP_solver() {}
 
@@ -502,6 +503,7 @@ double ILP_solver::GenerateValidSolution(design& mydesign, SeqPair& curr_sp, PnR
 double ILP_solver::CalculateCostFromSim(design& mydesign, SeqPair& curr_sp)
 {
 	auto logger = spdlog::default_logger()->clone("placer.cost.Cost");
+<<<<<<< HEAD
 	set<string> nets;
 	if (PinPairWeights.empty()) {
 		char* sideload = getenv("COST_FROM_SIM");
@@ -527,8 +529,11 @@ double ILP_solver::CalculateCostFromSim(design& mydesign, SeqPair& curr_sp)
 		}
 	}
 	map<string, PnRDB::bbox> pinCoords;
+=======
+	map<string, PnRDB::bbox> pinCoords;
+>>>>>>> 5b8999932e6f9ca9634be2d7e600f085aa21b10b
 	for (auto neti : mydesign.Nets) {
-		if (nets.find(neti.name) == nets.end()) continue;
+		if (!mydesign.IsNetInCF(neti.name))  continue;
 		for (auto connectedj : neti.connected) {
 			if (connectedj.type == placerDB::Block) {
 				int iter2 = connectedj.iter2, iter = connectedj.iter;
@@ -569,8 +574,18 @@ double ILP_solver::CalculateCostFromSim(design& mydesign, SeqPair& curr_sp)
 	//}
 
 	double cost(0.);
+	if (getenv("DEBUG_PLOT") != nullptr) {
+		if (mydesign._cfCostHeader.empty()) {
+			unsigned cnt(0);
+			mydesign._cfCostHeader = "p ";
+			for (auto& it : mydesign.GetCFPinPairWeights()) {
+				mydesign._cfCostHeader += "$x u " + std::to_string((++cnt) * 2) + " w lp t '" + std::regex_replace(it.first.first, std::regex("_"), "\\_") + " " + std::regex_replace(it.first.second, std::regex("_"), "\\_") + "',\\\n";
+			}
+		}
+		mydesign._cfCostComponents.clear();
+	}
 
-	for (auto& it : PinPairWeights) {
+	for (auto& it : mydesign.GetCFPinPairWeights()) {
 		double dist(0.);
 		auto it1 = pinCoords.find(it.first.first);
 		auto it2 = pinCoords.find(it.first.second);
@@ -593,12 +608,14 @@ double ILP_solver::CalculateCostFromSim(design& mydesign, SeqPair& curr_sp)
 			}
 		}
 		auto dcost = dist * it.second;
-		logger->info("DEBUG_delta_cost_pin_pair : {0} {1} {2} {3} {4}", it.first.first, it.first.second, dist, it.second, dcost);
-		logger->info("DEBUG_delta_cost_pin_pos : {0} {1} {2} {3} {4} {5} {6} {7} {8} {9}", it.first.first, it.first.second,
-				b1.LL.x, b1.LL.y, b1.UR.x, b1.UR.y, b2.LL.x, b2.LL.y, b2.UR.x, b2.UR.y);
+		if (getenv("DEBUG_PLOT") != nullptr) {
+			mydesign._cfCostComponents += std::to_string(dist) + " " + std::to_string(dcost) + " " ;
+		}
+		//logger->info("DEBUG_delta_cost_pin_pair : {0} {1} {2} {3} {4}", it.first.first, it.first.second, dist, it.second, dcost);
+		//logger->info("DEBUG_delta_cost_pin_pos : {0} {1} {2} {3} {4} {5} {6} {7} {8} {9}", it.first.first, it.first.second,
+		//		b1.LL.x, b1.LL.y, b1.UR.x, b1.UR.y, b2.LL.x, b2.LL.y, b2.UR.x, b2.UR.y);
 		cost += dcost;
 	}
-	logger->info("DEBUG delta cost : {0}", cost);
 
 	return cost*1.e8;
 }
@@ -620,18 +637,20 @@ double ILP_solver::CalculateCost(design& mydesign, SeqPair& curr_sp) {
   cost += match_cost * const_graph.BETA;
   cost += ratio * const_graph.SIGMA;
   cost += dead_area / area * const_graph.PHI;
-  //cost += linear_const * const_graph.PI;
-  //cost += multi_linear_const * const_graph.PII;
-  logger->info("DEBUG cost original : {0}", cost);
+  cost += linear_const * const_graph.PI;
+  cost += multi_linear_const * const_graph.PII;
   cf_cost =  CalculateCostFromSim(mydesign, curr_sp);
   cost += cf_cost;
-  logger->info("DEBUG cost after : {0}", cost);
-  logger->info("Cost from area: {0}", area);
-  logger->info("Cost from HPWL: {0}", HPWL * const_graph.LAMBDA);
-  logger->info("Cost from ratio: {0}", ratio * const_graph.SIGMA);
-  logger->info("Cost from dead_area: {0}", dead_area / area * const_graph.PHI);
-  logger->info("Cost from CFflow: {0}", cf_cost);
-  //logger->info("DEBUG cost original : {0}", cost);
+  if (getenv("DEBUG_PLOT") != nullptr) {
+	  mydesign._costComponents = std::to_string(area) + " " + std::to_string(HPWL * const_graph.LAMBDA) + " " + std::to_string( match_cost * const_graph.BETA) + " ";
+	  mydesign._costComponents += std::to_string(ratio * const_graph.SIGMA) + " " + std::to_string(dead_area / area * const_graph.PHI) + " ";
+	  mydesign._costComponents += std::to_string(linear_const * const_graph.PI) + " " + std::to_string(multi_linear_const * const_graph.PII) + " " + std::to_string(cf_cost) + " " + std::to_string(cost);
+	  if (mydesign._costHeader.empty()) {
+		  mydesign._costHeader  = "p $x u 1 w lp t 'Area', $x u 2 w lp t 'HPWL', $x u 3 w lp t 'match\\_cost',\\\n";
+		  mydesign._costHeader += "$x u 4 w lp t 'ratio', $x u 5 w lp t 'dead\\_area', $x u 6 w lp t 'linear\\_const',\\\n";
+		  mydesign._costHeader += "$x u 7 w lp t 'mult\\_linear\\_const', $x u 8 w lp t 'CF\\_cost', $x u 9 w lp t 'Total\\_cost'";
+	  }
+  }
   return cost;
 }
 

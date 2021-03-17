@@ -2,6 +2,34 @@
 #include "spdlog/spdlog.h"
 #include <cassert>
 
+void design::readCFConstraints()
+{
+  if (_cfdata._pinPairWeights.empty()) {
+    char* sideload = getenv("COST_FROM_SIM");
+    string slf;
+    if (sideload) {
+      auto logger = spdlog::default_logger()->clone("placer.design.readCFConstraints");
+      slf = sideload;
+      ifstream ifs(slf);
+      if (ifs) {
+        string tmps1, tmps2;
+        double wt(0.);
+        while (ifs) {
+          ifs >> tmps1;
+          _cfdata._nets.insert(tmps1);
+          ifs >> tmps1 >> tmps2 >> wt;
+          _cfdata._pinPairWeights[make_pair(tmps1, tmps2)] = wt;
+        }
+      }
+      ifs.close();
+
+      for (auto& it : _cfdata._pinPairWeights) {
+        logger->info("CF constraint {0} {1} {2}", it.first.first, it.first.second, it.second);
+      }
+    }
+  }
+}
+
 design::design() {
   bias_Hgraph=92;
   bias_Vgraph=92;
@@ -12,6 +40,7 @@ design::design() {
   noAsymBlock4Move=0;
   noSymGroup4PartMove=0;
   noSymGroup4FullMove=0;
+  readCFConstraints();
 }
 
 design::design(design& other, int mode) {
@@ -299,6 +328,7 @@ design::design(design& other, int mode) {
     logger->debug("Test: add paramenter 9");
     other.noSymGroup4PartMove=other.GetSizeSymGroup4PartMove(0);
     logger->debug("Test: add paramenter 10");
+	readCFConstraints();
 /*
     for(vector<placerDB::net>::iterator it=other.Nets.begin(); it!=other.Nets.end(); ++it) {
       int sink=0;
@@ -548,6 +578,7 @@ design::design(PnRDB::hierNode& node) {
   noAsymBlock4Move=GetSizeAsymBlock4Move(1);
   noSymGroup4FullMove=GetSizeSymGroup4FullMove(1);
   noSymGroup4PartMove=noSymGroup4FullMove;
+  readCFConstraints();
   //std::cout<<"Leaving design\n";
 }
 
