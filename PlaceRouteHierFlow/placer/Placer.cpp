@@ -14,10 +14,23 @@ Placer::Placer(PnRDB::hierNode& node, string opath, int effort, PnRDB::Drc_info&
 }
 
 Placer::Placer(std::vector<PnRDB::hierNode>& nodeVec, string opath, int effort, PnRDB::Drc_info& drcInfo) {
+  char* _debugPlot = getenv("DEBUG_PLOT");
+  if (_debugPlot != nullptr && atoi(_debugPlot) && !nodeVec.empty()) {
+	  _debugCostCompStream = ofstream("./Results/debug_cost_comp_" + nodeVec.back().name + ".pl");
+	  _debugCFCompStream = ofstream("./Results/debug_cf_cost_comp_" + nodeVec.back().name + ".pl");
+	  if (_debugCostCompStream.is_open()) _debugCostCompStream << "$x << EOD\n";
+	  if (_debugCFCompStream.is_open()) _debugCFCompStream << "$x << EOD\n";
+  }
   PlacementRegularAspectRatio_ILP(nodeVec, opath, effort, drcInfo);
   //PlacementRegularAspectRatio(nodeVec, opath, effort, drcInfo);
   //PlacementMixSAAspectRatio(nodeVec, opath, effort);
   //PlacementMixAPAspectRatio(nodeVec, opath, effort);
+}
+
+Placer::~Placer()
+{
+	if (_debugCostCompStream.is_open()) _debugCostCompStream.close();
+	if (_debugCFCompStream.is_open()) _debugCFCompStream.close();
 }
 
 //PnRDB::hierNode Placer::CheckoutHierNode() {
@@ -641,7 +654,9 @@ std::map<double, std::pair<SeqPair, ILP_solver>> Placer::PlacementCoreAspectRati
         }
         if (Smark) {
           //std::cout << "cost: " << trial_cost << std::endl;
-			logger->info("trial_cost : {0} {1} {2}", cnt, trial_cost, T);
+          //logger->info("trial_cost : {0} {1} {2}", cnt, trial_cost, T);
+          if (_debugCostCompStream.is_open() && !designData._costComponents.empty()) _debugCostCompStream << designData._costComponents << '\n';
+          if (_debugCFCompStream.is_open() && !designData._cfCostComponents.empty()) _debugCFCompStream << designData._cfCostComponents << '\n';
           curr_cost = trial_cost;
           curr_sp = trial_sp;
           curr_sol = trial_sol;
@@ -678,6 +693,8 @@ std::map<double, std::pair<SeqPair, ILP_solver>> Placer::PlacementCoreAspectRati
     T *= ALPHA;
     // cout<<T<<endl;
   }
+  if (_debugCostCompStream.is_open()) _debugCostCompStream << "EOD\n" << designData._costHeader << endl;
+  if (_debugCFCompStream.is_open()) _debugCFCompStream << "EOD\n" << designData._cfCostHeader << endl;
   // Write out placement results
   //cout << endl << "Placer-Info: optimal cost = " << curr_cost << endl;
   // curr_sol.PrintConstGraph();
