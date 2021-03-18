@@ -664,8 +664,8 @@ std::map<double, std::pair<SeqPair, ILP_solver>> Placer::PlacementCoreAspectRati
           if (_debugCostCompStream.is_open() && !designData._costComponents.empty()) _debugCostCompStream << designData._costComponents << '\n';
           if (_debugCFCompStream.is_open() && !designData._cfCostComponents.empty()) _debugCFCompStream << designData._cfCostComponents << '\n';
           if (_mpgen) {
-            _mpgen->addCostComp(designData._costHeader);
-            _mpgen->addRow(designData, curr_sp, curr_sol, designData._costComponents);
+            _mpgen->addCostComp(designData._costHeaderIP);
+            _mpgen->addRow(designData, curr_sp, curr_sol, designData._costComponentsIP);
           }
           curr_cost = trial_cost;
           curr_sp = trial_sp;

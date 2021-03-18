@@ -652,11 +652,11 @@ double ILP_solver::CalculateCost(design& mydesign, SeqPair& curr_sp) {
 	  }
   }
   if (getenv("DETAIL_PLOT_GEN") != nullptr) {
-	  mydesign._costComponents = std::to_string(area) + ", " + std::to_string(HPWL * const_graph.LAMBDA) + ", " + std::to_string( match_cost * const_graph.BETA) + ", ";
-	  mydesign._costComponents += std::to_string(ratio * const_graph.SIGMA) + ", " + std::to_string(dead_area / area * const_graph.PHI) + ", ";
-	  mydesign._costComponents += std::to_string(linear_const * const_graph.PI) + ", " + std::to_string(multi_linear_const * const_graph.PII) + ", " + std::to_string(cf_cost) + ", " + std::to_string(cost);
-	  if (mydesign._costHeader.empty()) {
-		  mydesign._costHeader  = "'Area', 'HPWL', 'match_cost', 'ratio', 'dead_area', 'linear_const', 'mult_linear_const', 'CF_cost', 'Total_cost'";
+	  mydesign._costComponentsIP = std::to_string(area) + ", " + std::to_string(HPWL * const_graph.LAMBDA) + ", " + std::to_string( match_cost * const_graph.BETA) + ", ";
+	  mydesign._costComponentsIP += std::to_string(ratio * const_graph.SIGMA) + ", " + std::to_string(dead_area / area * const_graph.PHI) + ", ";
+	  mydesign._costComponentsIP += std::to_string(linear_const * const_graph.PI) + ", " + std::to_string(multi_linear_const * const_graph.PII) + ", " + std::to_string(cf_cost) + ", " + std::to_string(cost);
+	  if (mydesign._costHeaderIP.empty()) {
+		  mydesign._costHeaderIP = "'Area', 'HPWL', 'match_cost', 'ratio', 'dead_area', 'linear_const', 'mult_linear_const', 'CF_cost', 'Total_cost'";
 	  }
   }
   return cost;

@@ -260,6 +260,7 @@ class design
 	const bool IsNetInCF(const string& name) { return _cfdata._nets.find(name) != _cfdata._nets.end(); }
 	const map<pair<string, string>, double>& GetCFPinPairWeights() const { return _cfdata._pinPairWeights; }
 	string _costComponents, _costHeader, _cfCostComponents, _cfCostHeader;
+	string _costComponentsIP, _costHeaderIP;
 };
 
 #endif
