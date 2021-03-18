@@ -11,6 +11,9 @@
 #include "ConstGraph.h"
 #include "ILP_solver.h"
 #include "../PnRDB/datatype.h"
+
+#include "IntPlot.h"
+
 using std::cout;
 using std::endl;
 
@@ -35,6 +38,7 @@ class Placer {
     };
     //design designData;
     //PnRDB::hierNode node;
+    MatPlotGen *_mpgen;
     bool GenerateValidSolution(design& mydesign, SeqPair& curr_sp, ConstGraph& curr_sol, int mode);
     void PlacementRegular(PnRDB::hierNode& node, string opath, int effort, PnRDB::Drc_info& drcInfo); // do placement with simulated annealing 
     void PlacementMixSA(PnRDB::hierNode& node, string opath, int effort, PnRDB::Drc_info& drcInfo); // do placement with mix-sized simulated annealing

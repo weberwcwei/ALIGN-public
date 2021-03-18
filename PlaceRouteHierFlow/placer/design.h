@@ -34,6 +34,7 @@ class design
     friend class Aplace;
     friend class Placer;
     friend class ILP_solver;
+    friend class MatPlotGen;
     //    enum NType {Block, Terminal};
     //    struct Node {
     //      NType type; // 1: blockPin; 2. Terminal

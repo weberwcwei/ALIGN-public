@@ -28,6 +28,7 @@ class SeqPair
 {
   private:
     friend class ILP_solver;
+    friend class MatPlotGen;
     vector<int> posPair;
     vector<int> negPair;
     vector<placerDB::Omark> orient;

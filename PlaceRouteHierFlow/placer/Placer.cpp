@@ -13,13 +13,18 @@ Placer::Placer(PnRDB::hierNode& node, string opath, int effort, PnRDB::Drc_info&
   PlacementRegular(node, opath, effort, drcInfo);
 }
 
-Placer::Placer(std::vector<PnRDB::hierNode>& nodeVec, string opath, int effort, PnRDB::Drc_info& drcInfo) {
+Placer::Placer(std::vector<PnRDB::hierNode>& nodeVec, string opath, int effort, PnRDB::Drc_info& drcInfo) : _mpgen(nullptr) {
   char* _debugPlot = getenv("DEBUG_PLOT");
   if (_debugPlot != nullptr && atoi(_debugPlot) && !nodeVec.empty()) {
 	  _debugCostCompStream = ofstream("./Results/debug_cost_comp_" + nodeVec.back().name + ".pl");
 	  _debugCFCompStream = ofstream("./Results/debug_cf_cost_comp_" + nodeVec.back().name + ".pl");
 	  if (_debugCostCompStream.is_open()) _debugCostCompStream << "$x << EOD\n";
 	  if (_debugCFCompStream.is_open()) _debugCFCompStream << "$x << EOD\n";
+ 
+  }
+  char* _detailPlotGen = getenv("DETAIL_PLOT_GEN");
+  if (_detailPlotGen != nullptr && atoi(_detailPlotGen) && !nodeVec.empty()) {
+    _mpgen = new MatPlotGen(nodeVec.back().name);
   }
   PlacementRegularAspectRatio_ILP(nodeVec, opath, effort, drcInfo);
   //PlacementRegularAspectRatio(nodeVec, opath, effort, drcInfo);
@@ -31,6 +36,7 @@ Placer::~Placer()
 {
 	if (_debugCostCompStream.is_open()) _debugCostCompStream.close();
 	if (_debugCFCompStream.is_open()) _debugCFCompStream.close();
+  delete _mpgen;
 }
 
 //PnRDB::hierNode Placer::CheckoutHierNode() {
@@ -657,6 +663,10 @@ std::map<double, std::pair<SeqPair, ILP_solver>> Placer::PlacementCoreAspectRati
           //logger->info("trial_cost : {0} {1} {2}", cnt, trial_cost, T);
           if (_debugCostCompStream.is_open() && !designData._costComponents.empty()) _debugCostCompStream << designData._costComponents << '\n';
           if (_debugCFCompStream.is_open() && !designData._cfCostComponents.empty()) _debugCFCompStream << designData._cfCostComponents << '\n';
+          if (_mpgen) {
+            _mpgen->addCostComp(designData._costHeader);
+            _mpgen->addRow(designData, curr_sp, curr_sol, designData._costComponents);
+          }
           curr_cost = trial_cost;
           curr_sp = trial_sp;
           curr_sol = trial_sol;
@@ -737,6 +747,7 @@ void Placer::PlacementRegularAspectRatio_ILP(std::vector<PnRDB::hierNode>& nodeV
   design designData(nodeVec.back());
   designData.PrintDesign();
   // Initialize simulate annealing with initial solution
+  if (_mpgen) _mpgen->addCells(designData);
   SeqPair curr_sp(designData);
   curr_sp.PrintSeqPair();
   ILP_solver curr_sol(designData);
