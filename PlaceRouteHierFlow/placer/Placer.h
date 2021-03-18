@@ -20,7 +20,7 @@ using std::endl;
 //#define MAX_TIMEOUT 4300000 //4.3 seconds = 4300000 us
 #define T_INT 1e6
 #define T_MIN 1e-6
-#define ALPHA 0.95
+#define ALPHA 0.995
 #define COUNT_LIMIT 200
 
 //#define MTMODE 1 // flag to turn on multi-threading
@@ -40,7 +40,7 @@ class Placer {
     //PnRDB::hierNode node;
     MatPlotGen *_mpgen;
     bool GenerateValidSolution(design& mydesign, SeqPair& curr_sp, ConstGraph& curr_sol, int mode);
-    void PlacementRegular(PnRDB::hierNode& node, string opath, int effort, PnRDB::Drc_info& drcInfo); // do placement with simulated annealing 
+    void PlacementRegular(PnRDB::hierNode& node, string opath, int effort, PnRDB::Drc_info& drcInfo); // do placement with simulated annealing
     void PlacementMixSA(PnRDB::hierNode& node, string opath, int effort, PnRDB::Drc_info& drcInfo); // do placement with mix-sized simulated annealing
     void PlacementMixAP(PnRDB::hierNode& node, string opath, int effort, PnRDB::Drc_info& drcInfo); // do placement with mix-sized analytical placement
     void ThreadFunc(Thread_data* MT);
