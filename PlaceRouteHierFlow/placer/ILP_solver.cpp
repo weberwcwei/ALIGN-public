@@ -607,7 +607,7 @@ double ILP_solver::CalculateCostFromSim(design& mydesign, SeqPair& curr_sp)
 				dist = (xprl < 0 ? abs(xprl) : 0) + (yprl < 0 ? abs(yprl) : 0);
 			}
 		}
-		auto dcost = dist * it.second;
+		auto dcost = dist * it.second.first;
 		if (getenv("DEBUG_PLOT") != nullptr) {
 			mydesign._cfCostComponents += std::to_string(dist) + " " + std::to_string(dcost) + " " ;
 		}

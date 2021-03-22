@@ -14,17 +14,21 @@ void design::readCFConstraints()
       if (ifs) {
         string tmps1, tmps2;
         double wt(0.);
-        while (ifs) {
-          ifs >> tmps1;
-          _cfdata._nets.insert(tmps1);
-          ifs >> tmps1 >> tmps2 >> wt;
-          _cfdata._pinPairWeights[make_pair(tmps1, tmps2)] = wt;
+		vector<string> strings;
+		string line;
+		while (!ifs.eof()) {
+			getline(ifs, line);
+			strings = split_by_spaces(line);
+			if (strings.size() >= 4) {
+				_cfdata._nets.insert(strings[0]);
+				_cfdata._pinPairWeights[make_pair(strings[1], strings[2])] = make_pair(stof(strings[3]), strings.size() > 4 ? stof(strings[4]) : 0.);
+			}
         }
       }
       ifs.close();
 
       for (auto& it : _cfdata._pinPairWeights) {
-        logger->info("CF constraint {0} {1} {2}", it.first.first, it.first.second, it.second);
+        logger->info("CF constraint {0} {1} {2} {3}", it.first.first, it.first.second, it.second.first, it.second.second);
       }
     }
   }

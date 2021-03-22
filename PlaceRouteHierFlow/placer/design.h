@@ -163,7 +163,7 @@ class design
 
 	struct CFData {
 		set<string> _nets;
-		map<pair<string, string>, double> _pinPairWeights;
+		map<pair<string, string>, pair<double, double> > _pinPairWeights; //first : rms, second : peak
 	};
 
 	CFData _cfdata;
@@ -258,7 +258,7 @@ class design
     PnRDB::point GetPlacedBlockInterMetalRelPoint(int blockid, placerDB::Omark ort, PnRDB::point& originP, int sel);
 
 	const bool IsNetInCF(const string& name) { return _cfdata._nets.find(name) != _cfdata._nets.end(); }
-	const map<pair<string, string>, double>& GetCFPinPairWeights() const { return _cfdata._pinPairWeights; }
+	const map<pair<string, string>, pair<double, double> >& GetCFPinPairWeights() const { return _cfdata._pinPairWeights; }
 	string _costComponents, _costHeader, _cfCostComponents, _cfCostHeader;
 	string _costComponentsIP, _costHeaderIP;
 };
