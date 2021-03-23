@@ -10,6 +10,8 @@ import math
 import re
 import numpy as np
 import csv
+import math
+from sklearn import preprocessing
 
 from utils.classdesc import primitive, module, transistor, passive, net, subcircuit
 
@@ -681,8 +683,9 @@ def get_branch_current_for_verilog_at_each_time_stamp(WORK_DIR, design, moduleli
                         delta_time = time[1:] - time[0:-1]
                         area_of_the_transient = np.sum(0.5*(np.multiply(squared_current[1:] + squared_current[0:-1], delta_time)))
                         rms_current_from_int = np.sqrt(area_of_the_transient/(time[-1] - time[0]))
-                        rms_current = np.sqrt(np.mean(np.square(all_branch_currents_verilog_df[item].to_numpy())))
-                        templist = [prim1, prim2, rms_current_from_int]
+                        # rms_current = np.sqrt(np.mean(np.square(all_branch_currents_verilog_df[item].to_numpy())))
+                        max_current =  np.max(all_branch_currents_verilog_df[item].to_numpy())
+                        templist = [prim1, prim2, rms_current_from_int, max_current]
                         # print("RMS current regular: {}, RMS current from area: {}" .format(rms_current, rms_current_from_int))
                         # print("{} {} {}" .format(templist, netname, rms_current))
                         net.branchcurrents.append(templist)
@@ -695,6 +698,7 @@ def purge(design):
         if re.search("pin_currents*", f) or \
            re.search("branch_currents*", f) or \
            re.search(design + "_tb.print", f) or \
+           re.search(design + "*.cfconst", f) or \
            re.search(design + "_revised_tb.print", f):
             os.remove(os.path.join(WORK_DIR + tc_directory, f))
 
@@ -704,9 +708,56 @@ def display_constraints_after_sort(design):
     all_constraints = pd.read_csv(WORK_DIR + tc_directory + design + ".cfconst", header = None, delimiter = '\s+')
     all_constraints.columns = ["Net", "Pin1", "Pin2", "RMS"]
     all_constraints = all_constraints.sort_values(by=['RMS'], ascending = False)
-    print(all_constraints)
+    # print(all_constraints)
 
 
+
+def modify_constraints(design):
+    # logging.info("Calculating branch currents for verilog...")
+    tc_directory = "/testcase_" + design + "/"
+    all_constraints = pd.read_csv(WORK_DIR + tc_directory + design + ".cfconst", header = None, delimiter = '\s+')
+    all_constraints.columns = ["Net", "Pin1", "Pin2", "RMS"]
+    all_constraints = all_constraints.sort_values(by=['RMS'], ascending = False)
+    print("after sort:\n\n", all_constraints)
+    all_constraints.to_csv(WORK_DIR + tc_directory + design + "_sorted.cfconst", index = False, header = False, sep = '\t', mode = 'w')
+    # all_constraints["RMS"] = all_constraints["RMS"]/all_constraints["RMS"].max()
+    # all_constraints["RMS"] = all_constraints["RMS"]/all_constraints["RMS"].mean()
+    # print("after diving by mean:\n{}\n", .format(all_constraints))
+    all_constraints["RMS"] = (all_constraints["RMS"] - all_constraints["RMS"].min())/(all_constraints["RMS"].max() - all_constraints["RMS"].min())
+    all_constraints.to_csv(WORK_DIR + tc_directory + design + "_linear.cfconst", index = False, header = False, sep = '\t', mode = 'w')
+    print("after scaling:\n\n", all_constraints)
+    x_naught = all_constraints["RMS"].mean()
+    all_constraints["RMS"] = all_constraints["RMS"].apply(lambda x: 1/(1+math.exp(-30*(x - x_naught))))
+    print("mean: {}" .format(x_naught))
+    print("after logistic scaling:\n\n", all_constraints)
+    # all_constraints["RMS"] = all_constraints["RMS"].apply(np.square)
+    # print(all_constraints)
+    all_constraints.to_csv(WORK_DIR + tc_directory + design + "_sigmoid.cfconst", index = False, header = False, sep = '\t', mode = 'w')
+
+
+
+def test_pin_currents(design):
+    tc_directory = "/testcase_" + design + "/"
+    read_pin_currents = pd.read_csv(WORK_DIR + tc_directory + "pin_currents_new.csv", delimiter = ":")
+    # list_of_pins_to_compare = ["i1(I1.mmp0)", "i1(I1.mmp1)", "i1(I1.mmn3)", "i1(I1.mmn4)", "i1(I1.mmp4)", "i1(I1.mmp2)", "i1(I1.mmp6)", "i1(I1.mmp7)", "i1(I1.mmn6)", "i1(I1.mmn7)"]
+    list_one_of_pins_to_compare = ["i1(I1.mmp1)", "i1(I1.mmn4)", "i1(I1.mmp2)", "i2(I1.mmp0)", "i2(I1.mmp6)", "i2(I1.mmn5)", "i2(I1.mmn3)"]
+    list_two_of_pins_to_compare = ["i1(I1.mmp0)", "i1(I1.mmn3)", "i1(I1.mmp4)", "i2(I1.mmp1)", "i2(I1.mmp7)", "i2(I1.mmn6)", "i2(I1.mmn4)"]
+    dict1 = {key: None for key in list_one_of_pins_to_compare}
+    dict2 = {key: None for key in list_two_of_pins_to_compare}
+    for item in read_pin_currents.columns:
+        if item in list_one_of_pins_to_compare:
+            temp = np.sqrt(np.mean(np.square(read_pin_currents[item].to_numpy())))
+            # temp = np.mean(read_pin_currents[item].to_numpy())
+            dict1[item] = round(temp, 6)
+            # print("For {}: {}\n".format(item, np.sqrt(np.mean(np.square(read_pin_currents[item].to_numpy())))))
+        if item in list_two_of_pins_to_compare:
+            temp = np.sqrt(np.mean(np.square(read_pin_currents[item].to_numpy())))
+            # temp = np.mean(read_pin_currents[item].to_numpy())
+            dict2[item] = round(temp, 6)
+
+    print(dict1)
+    print(dict2)
+    pass
 def main():
     logging.info('Starting ChargeFlow...')
     purge(args.design)
@@ -726,6 +777,8 @@ def main():
     cfconst = prepare_cfconst(args.design, modulelist)
     logging.info("ChargeFlow Constraints:\n{}" .format(cfconst))
     display_constraints_after_sort(args.design)
+    modify_constraints(args.design)
+    # test_pin_currents(args.design)
     # print("From spice:")
     # for subcircuit in subcircuit_list:
     #     if subcircuit.name == args.design:
