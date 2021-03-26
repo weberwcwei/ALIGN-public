@@ -663,13 +663,13 @@ std::map<double, std::pair<SeqPair, ILP_solver>> Placer::PlacementCoreAspectRati
           //logger->info("trial_cost : {0} {1} {2}", cnt, trial_cost, T);
           if (_debugCostCompStream.is_open() && !designData._costComponents.empty()) _debugCostCompStream << designData._costComponents << '\n';
           if (_debugCFCompStream.is_open() && !designData._cfCostComponents.empty()) _debugCFCompStream << designData._cfCostComponents << '\n';
+          curr_cost = trial_cost;
+          curr_sp = trial_sp;
+          curr_sol = trial_sol;
           if (_mpgen) {
             _mpgen->addCostComp(designData._costHeaderIP);
             _mpgen->addRow(designData, curr_sp, curr_sol, designData._costComponentsIP);
           }
-          curr_cost = trial_cost;
-          curr_sp = trial_sp;
-          curr_sol = trial_sol;
           // if(update_index>updateThrd) {
           //std::cout << "Insert\n";
           oData[curr_cost] = std::make_pair(curr_sp, curr_sol);
