@@ -51,20 +51,22 @@ void ReadVerilogHelper::semantic( const string& fpath, const string& topcell)
 
 	{
 	    if(db.DRC_info.Metal_info.size() < 2) {logger->warn("PnRDB-Error: too few metal layers");}
-	    if(db.DRC_info.Metal_info[0].direct==1) { //horizontal
-		curr_node.bias_Vgraph=db.DRC_info.Metal_info[0].grid_unit_y;
-	    } else {
-		curr_node.bias_Hgraph=db.DRC_info.Metal_info[0].grid_unit_x;
-	    }
-	    if(db.DRC_info.Metal_info[1].direct==1) { //horizontal
-		curr_node.bias_Vgraph=db.DRC_info.Metal_info[1].grid_unit_y;
-	    } else {
-		curr_node.bias_Hgraph=db.DRC_info.Metal_info[1].grid_unit_x;
-	    }
+        /**if(db.DRC_info.Metal_info[0].direct==1) { //horizontal
+            curr_node.bias_Vgraph=db.DRC_info.Metal_info[0].grid_unit_y;
+        } else {
+            curr_node.bias_Hgraph=db.DRC_info.Metal_info[0].grid_unit_x;
+        }
+        if(db.DRC_info.Metal_info[1].direct==1) { //horizontal
+            curr_node.bias_Vgraph=db.DRC_info.Metal_info[1].grid_unit_y;
+        } else {
+            curr_node.bias_Hgraph=db.DRC_info.Metal_info[1].grid_unit_x;
+        }**/
+        curr_node.bias_Vgraph = db.DRC_info.Design_info.Vspace;
+        curr_node.bias_Hgraph = db.DRC_info.Design_info.Hspace;
         // added one nodes to the class
-        if (db.ReadConstraint(curr_node, fpath, "const")) {
-            logger->info("Finished reading contraint file");
-        } else if (db.ReadConstraint_Json(curr_node, fpath, "const.json")) {
+        if (db.ReadConstraint_Json(curr_node, fpath, "const.json")) {
+            logger->info("Finished reading contraint json file");
+        } else if (db.ReadConstraint(curr_node, fpath, "const")) {
             logger->info("Finished reading contraint file");
         } else {
             logger->warn("PnRDB-Warn: fail to read constraint file of module {0}", curr_node.name);
@@ -175,7 +177,7 @@ void ReadVerilogHelper::semantic( const string& fpath, const string& topcell)
             db.hierTree[j].Nets = temp_net;
          }
      }
- 
+
   //update pins & terminal connection iternet
   for(unsigned int i=0;i<db.hierTree.size();i++){
       for(unsigned int j=0;j<db.hierTree[i].Nets.size();j++){
@@ -209,6 +211,29 @@ db.hierTree[i].Terminals[db.hierTree[i].Nets[j].connected[k].iter].netIter = j;
               }
 
       }
+
+  //adjust symmetry net iter
+
+  for(unsigned int i=0;i<db.hierTree.size();i++){
+     for(unsigned int j=0;j<db.hierTree[i].SNets.size();j++){
+        int iter1=-1;
+        int iter2=-1;
+        for(unsigned int k=0;k<db.hierTree[i].Nets.size();k++){
+           if(db.hierTree[i].Nets[k].name==db.hierTree[i].SNets[j].net1.name){
+               iter1 = k;
+               break;
+             }
+        }
+        for(unsigned int k=0;k<db.hierTree[i].Nets.size();k++){
+           if(db.hierTree[i].Nets[k].name==db.hierTree[i].SNets[j].net2.name){
+               iter2 = k;
+               break;
+             }
+        }
+        db.hierTree[i].Nets[iter1].symCounterpart=iter2;
+        db.hierTree[i].Nets[iter2].symCounterpart=iter1; 
+     }
+  }
 
 //Add LinearConst here
 
