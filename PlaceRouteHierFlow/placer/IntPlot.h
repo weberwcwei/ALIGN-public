@@ -9,7 +9,12 @@
 #include "SeqPair.h"
 #include "ILP_solver.h"
 
-using std::map, std::vector, std::string, std::pair, std::ofstream, std::set;
+using std::map;
+using std::vector;
+using std::string;
+using std::pair;
+using std::ofstream;
+using std::set;
 typedef map<string, PnRDB::bbox> CellBoxMap;
 
 class MatPlotGen {
