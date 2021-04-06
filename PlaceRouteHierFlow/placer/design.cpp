@@ -55,6 +55,8 @@ design::design(design& other, int mode) {
   // small blocks will be filtered out
   // Limitation: currently we ignore terminals when placer works on big macros only
   //cout<<"Test: design mode "<<mode<<endl;
+  name = other.name;
+  _cfdata = other._cfdata;
   if(mode==1) {
     this->mixFlag=false;
     other.mixFlag=true;
@@ -369,6 +371,7 @@ design::design(PnRDB::hierNode& node) {
 
   auto logger = spdlog::default_logger()->clone("placer.design.design");
 
+  name = node.name;
   bias_Vgraph=node.bias_Vgraph; // from node
   bias_Hgraph=node.bias_Hgraph; // from node
   Aspect_Ratio_weight = node.Aspect_Ratio_weight;
@@ -1264,6 +1267,8 @@ void design::readRandConstFile(string random_constrain_file) {
 //}
 
 design::design(const design& other):Port_Location(other.Port_Location) {
+  this->name=other.name;
+  this->_cfdata=other._cfdata;
   this->Blocks=other.Blocks;
   this->Terminals=other.Terminals;
   this->Nets=other.Nets;
@@ -1286,6 +1291,8 @@ design::design(const design& other):Port_Location(other.Port_Location) {
 }
 
 design& design::operator= (const design& other) {
+  this->name=other.name;
+  this->_cfdata=other._cfdata;
   this->Blocks=other.Blocks;
   this->Terminals=other.Terminals;
   this->Nets=other.Nets;

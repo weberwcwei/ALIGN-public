@@ -54,6 +54,8 @@ class Placer {
     void PlacementMixAPAspectRatio(std::vector<PnRDB::hierNode>& nodeVec, string opath, int effort, PnRDB::Drc_info& drcInfo);
     void PlacementRegularAspectRatio_ILP(std::vector<PnRDB::hierNode>& nodeVec, string opath, int effort, PnRDB::Drc_info& drcInfo);
 
+    std::set<std::pair<std::vector<int>, vector<int>>> _seqHist;
+
   public:
     Placer(PnRDB::hierNode& node, string opath, int effort, PnRDB::Drc_info& drcInfo);
     Placer(std::vector<PnRDB::hierNode>& nodeVec, string opath, int effort, PnRDB::Drc_info& drcInfo);

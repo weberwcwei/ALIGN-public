@@ -191,6 +191,7 @@ class design
 
 	void readCFConstraints();
   public:
+    std::string name;
     design();
     design(PnRDB::hierNode& node);
     design(string blockfile, string netfile);

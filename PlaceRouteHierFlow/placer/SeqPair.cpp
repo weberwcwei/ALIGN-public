@@ -1,12 +1,59 @@
 #include "SeqPair.h"
 #include "spdlog/spdlog.h"
 
+std::vector<size_t> SeqPair::_factorial;
+
 SeqPair::SeqPair() {
   this->posPair.clear();
   this->negPair.clear();
   this->orient.clear();
   this->symAxis.clear();
   this->selected.clear();
+}
+
+size_t SeqPair::GetIndex(const vector<int>& seq) const
+{
+  size_t ind = 0;
+  if (seq.size() <= SeqPair::_factorial.size()) {
+    for (unsigned i = 0; i < seq.size() - 1; ++i) {
+      unsigned count = 0;
+      for (unsigned j = i + 1; j < seq.size(); ++j)
+        if (seq[i] > seq[j])
+          ++count;
+      if (count > 0) ind += _factorial[seq.size() - i - 1] * count;
+    }
+  }
+  return ind;
+}
+
+std::pair<size_t, size_t> SeqPair::GetLexIndex()
+{
+  if (SeqPair::_factorial.size() < posPair.size()) {
+    for (unsigned i = SeqPair::_factorial.size(); i < posPair.size(); ++i) {
+      SeqPair::_factorial.push_back(factorial(i));
+    }
+  }
+  return std::make_pair(GetIndex(posPair), GetIndex(negPair));
+}
+
+std::string SeqPair::GetString(const unsigned type) const
+{
+  std::string tmpStr("[");
+    if (type == 0) {
+      for (auto& s : selected)
+        tmpStr += " " + std::to_string(s);
+	} else if (type < 3) {
+      for (auto& s : (type == 1 ? posPair : negPair)) 
+        tmpStr += " " + std::to_string(s);
+    } else if (type == 3) {
+      for (auto& s : orient)
+        tmpStr += " " + std::to_string(s);
+    } else if (type == 4) {
+      for (auto& s : symAxis)
+        tmpStr += " " + std::to_string(s);
+    }
+  tmpStr += " ]";
+  return tmpStr;
 }
 
 //SeqPair::SeqPair(int blockSize) {
@@ -824,7 +871,9 @@ void SeqPair::KeepOrdering(design& caseNL) {
 void SeqPair::PerturbationNew(design& caseNL) {
   /* initialize random seed: */
   //srand(time(NULL));
+  auto logger = spdlog::default_logger()->clone("placer.SeqPair.PerturbationNew");
   bool mark=false;
+  auto s1 = GetString(1), s2 = GetString(2);
   std::set<int> pool;
   // 0:ChangeSelectedBlock
   // 1:MoveAsymmetricBlockposPair
@@ -843,12 +892,13 @@ void SeqPair::PerturbationNew(design& caseNL) {
   if(caseNL.noSymGroup4FullMove>1) {pool.insert(6);}
   int fail = 0;
   int count = 20;
+  int choice(0);
   while(!mark and fail<count) {
     //std::cout<<int(pool.size())<<std::endl;
-    int choice=rand() % int(pool.size());
+    choice= 1 + (rand() % 3);
     std::set<int>::iterator cit=pool.begin(); std::advance(cit, choice);
     switch(*cit) {
-        case 0: mark=ChangeSelectedBlock(caseNL); break;
+        //case 0: mark=ChangeSelectedBlock(caseNL); break;
         case 1: mark=MoveAsymmetricBlockposPair(caseNL); break;
         case 2: mark=MoveAsymmetricBlocknegPair(caseNL); break;
         case 3: mark=MoveAsymmetricBlockdoublePair(caseNL); break;
@@ -863,6 +913,10 @@ void SeqPair::PerturbationNew(design& caseNL) {
     fail++;
   }
   KeepOrdering(caseNL);
+  if (posPair.size() > 5) {
+    logger->info("seq pair data : {0} {1}, {2}, {3}, {4}, {5}, {6}", caseNL.name, s1, s2,
+        GetString(1), GetString(2), choice, fail);
+  }
 }
 
 void SeqPair::Perturbation(design& caseNL) {
