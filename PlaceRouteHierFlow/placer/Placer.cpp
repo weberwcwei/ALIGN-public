@@ -540,6 +540,7 @@ std::map<double, std::pair<SeqPair, ILP_solver>> Placer::PlacementCoreAspectRati
 
   // Mode 0: graph bias; Mode 1: graph bias + net margin; Others: no bias/margin
   // cout<<"PlacementCore\n";
+  auto start = std::chrono::steady_clock::now();
   std::map<double, std::pair<SeqPair, ILP_solver>> oData;
   curr_sp.PrintSeqPair();
   double curr_cost = 0;
@@ -567,7 +568,9 @@ std::map<double, std::pair<SeqPair, ILP_solver>> Placer::PlacementCoreAspectRati
   float per = 0.1;
   int updateThrd = 100;
   float total_update_number = log(T_MIN / T_INT) / log(ALPHA);
-  unsigned cnt(0), rep(0);
+  unsigned cnt(0);
+  int total_counts = 0;
+  int count_accepted = 0;
   while (T > T_MIN) {
     int i = 1;
     int MAX_Iter = 1;
@@ -633,6 +636,7 @@ std::map<double, std::pair<SeqPair, ILP_solver>> Placer::PlacementCoreAspectRati
             // std::cout<<"Insert\n";
             oData[curr_cost] = curr_sp;
             ReshapeSeqPairMap(oData, nodeSize);
+            count_accepted++;
           }
         }
       }
@@ -658,27 +662,23 @@ std::map<double, std::pair<SeqPair, ILP_solver>> Placer::PlacementCoreAspectRati
             Smark = true;
           }
         }
-        if (_mpgen) {
-          auto indexPair = trial_sp.GetLexIndex();
-          if (designData.name == "high_speed_comparator") 
-          logger->info("seq pair data : {0} {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}", designData.name, trial_sp.GetString(0),
-              trial_sp.GetString(1), trial_sp.GetString(2), trial_sp.GetString(3), trial_sp.GetString(3),
-              Smark, indexPair.first, indexPair.second);
-        }
-
-        auto pr = make_pair(trial_sp.posPair, trial_sp.negPair);
-        if (_seqHist.find(pr) == _seqHist.end()) {
-          _seqHist.insert(pr);
-        } else {
-          ++rep;
-        }
-        if (Smark) {
+        //if (_mpgen) {
+        //  auto indexPair = trial_sp.GetLexIndex();
+        //  logger->info("seq pair data : {0} {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}", designData.name, trial_sp.GetString(0),
+        //      trial_sp.GetString(1), trial_sp.GetString(2), trial_sp.GetString(3), trial_sp.GetString(3),
+        //      Smark, indexPair.first, indexPair.second, trial_cost, curr_cost, T);
+        //}
+        total_counts++;
+		// if (_mpgen) {
+		// 	_mpgen->addCostComp(designData._costHeaderIP);
+		// 	_mpgen->addRow(designData, curr_sp, curr_sol, designData._costComponentsIP);
+		// }
+		if (Smark) {
           //std::cout << "cost: " << trial_cost << std::endl;
           //logger->info("trial_cost : {0} {1} {2}", cnt, trial_cost, T);
           curr_cost = trial_cost;
           curr_sp = trial_sp;
           curr_sol = trial_sol;
-          if (designData.GetSizeofBlocks() > 5) logger->info("curr cost : {0} {1}", T, curr_cost);
           if (_debugCostCompStream.is_open() && !designData._costComponents.empty()) _debugCostCompStream << T << ' ' << designData._costComponents << '\n';
           if (_debugCFCompStream.is_open() && !designData._cfCostComponents.empty()) _debugCFCompStream << T << ' ' << designData._cfCostComponents << '\n';
           if (_mpgen) {
@@ -689,10 +689,7 @@ std::map<double, std::pair<SeqPair, ILP_solver>> Placer::PlacementCoreAspectRati
           //std::cout << "Insert\n";
           oData[curr_cost] = std::make_pair(curr_sp, curr_sol);
           ReshapeSeqPairMap(oData, nodeSize);
-          if (designData.name == "high_speed_comparator") 
-            logger->info("between selections : {0} {1} {2} {3}", curr_cost, cnt, rep, T);
-          cnt = 0;
-          rep = 0;
+          count_accepted++;
           //}
         }
       }
@@ -722,13 +719,20 @@ std::map<double, std::pair<SeqPair, ILP_solver>> Placer::PlacementCoreAspectRati
     T *= ALPHA;
     // cout<<T<<endl;
   }
-  logger->info("between selections_{0} : {1} {2} {3} {4}", _seqHist.size(), curr_cost, cnt, rep, T);
+  auto end = std::chrono::steady_clock::now();
+  std::chrono::duration<double> elapsed_seconds = end-start;
+  logger->info("Total iterations: {0}, total accepted placements: {1}  SBlocks : {2}" , total_counts, count_accepted, designData.GetSizeofSBlocks());
+  logger->info("elapsed time: {0}s", elapsed_seconds.count());
+  logger->info("Get Size of the Block: {0}", designData.GetSizeofBlocks());
+  logger->info("Variants: {0}", designData.Blocks.at(0).size());
   if (_debugCostCompStream.is_open()) _debugCostCompStream << "EOD\n" << designData._costHeader << endl;
   if (_debugCFCompStream.is_open()) _debugCFCompStream << "EOD\n" << designData._cfCostHeader << endl;
   // Write out placement results
   //cout << endl << "Placer-Info: optimal cost = " << curr_cost << endl;
   // curr_sol.PrintConstGraph();
   curr_sp.PrintSeqPair();
+  curr_sol.PlotPlacement(designData, curr_sp, designData.name + "_" + std::to_string(cnt) + "_opt.plt");
+
   // curr_sol.updateTerminalCenter(designData, curr_sp);
   return oData;
 }

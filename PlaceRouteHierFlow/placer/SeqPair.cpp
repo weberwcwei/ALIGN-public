@@ -871,9 +871,7 @@ void SeqPair::KeepOrdering(design& caseNL) {
 void SeqPair::PerturbationNew(design& caseNL) {
   /* initialize random seed: */
   //srand(time(NULL));
-  auto logger = spdlog::default_logger()->clone("placer.SeqPair.PerturbationNew");
   bool mark=false;
-  auto s1 = GetString(1), s2 = GetString(2);
   std::set<int> pool;
   // 0:ChangeSelectedBlock
   // 1:MoveAsymmetricBlockposPair
@@ -892,13 +890,12 @@ void SeqPair::PerturbationNew(design& caseNL) {
   if(caseNL.noSymGroup4FullMove>1) {pool.insert(6);}
   int fail = 0;
   int count = 20;
-  int choice(0);
   while(!mark and fail<count) {
     //std::cout<<int(pool.size())<<std::endl;
-    choice= 1 + (rand() % 3);
+    int choice=rand() % int(pool.size());
     std::set<int>::iterator cit=pool.begin(); std::advance(cit, choice);
     switch(*cit) {
-        //case 0: mark=ChangeSelectedBlock(caseNL); break;
+        case 0: mark=ChangeSelectedBlock(caseNL); break;
         case 1: mark=MoveAsymmetricBlockposPair(caseNL); break;
         case 2: mark=MoveAsymmetricBlocknegPair(caseNL); break;
         case 3: mark=MoveAsymmetricBlockdoublePair(caseNL); break;
@@ -913,10 +910,6 @@ void SeqPair::PerturbationNew(design& caseNL) {
     fail++;
   }
   KeepOrdering(caseNL);
-  if (posPair.size() > 5) {
-    logger->info("seq pair data : {0} {1}, {2}, {3}, {4}, {5}, {6}", caseNL.name, s1, s2,
-        GetString(1), GetString(2), choice, fail);
-  }
 }
 
 void SeqPair::Perturbation(design& caseNL) {

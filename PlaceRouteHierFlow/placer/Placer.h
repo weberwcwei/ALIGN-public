@@ -5,6 +5,8 @@
 #include <stdlib.h>     /* srand, rand */
 #include <time.h>       /* time */
 #include <cmath>
+#include <ctime>
+#include <chrono>
 #include "design.h"
 #include "Aplace.h"
 #include "SeqPair.h"
@@ -20,7 +22,7 @@ using std::endl;
 //#define MAX_TIMEOUT 4300000 //4.3 seconds = 4300000 us
 #define T_INT 1e6
 #define T_MIN 1e-6
-#define ALPHA 0.995
+#define ALPHA 0.99995
 #define COUNT_LIMIT 200
 
 //#define MTMODE 1 // flag to turn on multi-threading
@@ -53,8 +55,6 @@ class Placer {
     void PlacementMixSAAspectRatio(std::vector<PnRDB::hierNode>& nodeVec, string opath, int effort, PnRDB::Drc_info& drcInfo);
     void PlacementMixAPAspectRatio(std::vector<PnRDB::hierNode>& nodeVec, string opath, int effort, PnRDB::Drc_info& drcInfo);
     void PlacementRegularAspectRatio_ILP(std::vector<PnRDB::hierNode>& nodeVec, string opath, int effort, PnRDB::Drc_info& drcInfo);
-
-    std::set<std::pair<std::vector<int>, vector<int>>> _seqHist;
 
   public:
     Placer(PnRDB::hierNode& node, string opath, int effort, PnRDB::Drc_info& drcInfo);
