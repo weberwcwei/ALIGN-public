@@ -669,10 +669,10 @@ std::map<double, std::pair<SeqPair, ILP_solver>> Placer::PlacementCoreAspectRati
         //      Smark, indexPair.first, indexPair.second, trial_cost, curr_cost, T);
         //}
         total_counts++;
-		// if (_mpgen) {
-		// 	_mpgen->addCostComp(designData._costHeaderIP);
-		// 	_mpgen->addRow(designData, curr_sp, curr_sol, designData._costComponentsIP);
-		// }
+		if (_mpgen) {
+			_mpgen->addCostComp(designData._costHeaderIP);
+			_mpgen->addRow(designData, curr_sp, curr_sol, designData._costComponentsIP);
+		}
 		if (Smark) {
           //std::cout << "cost: " << trial_cost << std::endl;
           //logger->info("trial_cost : {0} {1} {2}", cnt, trial_cost, T);

@@ -459,7 +459,7 @@ double ILP_solver::GenerateValidSolution(design& mydesign, SeqPair& curr_sp, PnR
   for (int i = 0; i < mydesign.Blocks.size(); i++) {
     block_HPWL += double(mydesign.Blocks[i][curr_sp.selected[i]].width) + double(mydesign.Blocks[i][curr_sp.selected[i]].height);
   }
-  HPWL_norm = HPWL / block_HPWL / double(mydesign.Blocks.size());
+  if (!mydesign.Nets.empty()) HPWL_norm = HPWL / block_HPWL / double(mydesign.Nets.size());
   // calculate linear constraint
   linear_const = 0;
   std::vector<std::vector<double>> feature_value;
@@ -490,6 +490,8 @@ double ILP_solver::GenerateValidSolution(design& mydesign, SeqPair& curr_sp, PnR
     temp_sum = std::max(temp_sum - neti.upperBound, double(0));
     linear_const += temp_sum;
   }
+
+  if (!mydesign.Nets.empty()) linear_const /= (block_HPWL * double(mydesign.Nets.size()));
 
   // calculate multi linear constraint
   multi_linear_const = 0;
@@ -638,17 +640,17 @@ double ILP_solver::CalculateCost(design& mydesign, SeqPair& curr_sp) {
   cost += area_norm;
   cost += HPWL_norm * const_graph.LAMBDA;
   double match_cost = 0;
-  //for (auto mbi : mydesign.Match_blocks) {
-  //  match_cost += abs(Blocks[mbi.blockid1].x + mydesign.Blocks[mbi.blockid1][curr_sp.selected[mbi.blockid1]].width / 2 - Blocks[mbi.blockid2].x -
-  //                    mydesign.Blocks[mbi.blockid2][curr_sp.selected[mbi.blockid2]].width / 2) +
-  //                abs(Blocks[mbi.blockid1].y + mydesign.Blocks[mbi.blockid1][curr_sp.selected[mbi.blockid1]].height / 2 - Blocks[mbi.blockid2].y -
-  //                    mydesign.Blocks[mbi.blockid2][curr_sp.selected[mbi.blockid2]].height / 2);
-  //}
-  cost += match_cost * const_graph.BETA;
-  // cost += abs(log(ratio) - log(Aspect_Ratio[0])) * Aspect_Ratio_weight;
-  //dead_area = 0;
-  //cost += dead_area / area * const_graph.PHI;
-  //cost += linear_const * const_graph.PI;
+  double max_dim = std::max(UR.x - LL.x, UR.y - LL.y);
+  for (auto mbi : mydesign.Match_blocks) {
+    match_cost += (abs(Blocks[mbi.blockid1].x + mydesign.Blocks[mbi.blockid1][curr_sp.selected[mbi.blockid1]].width / 2 - Blocks[mbi.blockid2].x -
+                      mydesign.Blocks[mbi.blockid2][curr_sp.selected[mbi.blockid2]].width / 2) +
+                  abs(Blocks[mbi.blockid1].y + mydesign.Blocks[mbi.blockid1][curr_sp.selected[mbi.blockid1]].height / 2 - Blocks[mbi.blockid2].y -
+                      mydesign.Blocks[mbi.blockid2][curr_sp.selected[mbi.blockid2]].height / 2)) / max_dim ;
+  }
+  if (!mydesign.Match_blocks.empty()) match_cost /= (mydesign.Match_blocks.size());
+  //cost += match_cost * const_graph.BETA;
+  cost += dead_area * 0.5 * const_graph.PHI / area ;
+  //cost += linear_const * 0.5 * const_graph.PI;
   //cost += multi_linear_const * const_graph.PII;
   double cf_cost =  CalculateCostFromSim(mydesign, curr_sp) * 10;
   cost += cf_cost;
