@@ -185,7 +185,7 @@ design::design(PnRDB::hierNode& node, PnRDB::Drc_info& drcInfo, const int seed) 
       placerDB::NType tmptype = placerDB::Block;
       if (nit->type == PnRDB::Block) {
         tmptype = placerDB::Block;
-        if (Blocks[nit->iter2][0].blockPins[nit->iter].center.size()) floating_pin = false;
+        if (Blocks[nit->iter2][0].blockPins.size() && Blocks[nit->iter2][0].blockPins[nit->iter].center.size()) floating_pin = false;
       } else if (nit->type == PnRDB::Terminal) {
         tmptype = placerDB::Terminal;
       } else {

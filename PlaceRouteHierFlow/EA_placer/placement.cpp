@@ -1822,9 +1822,6 @@ void Placement::force_alignment(vector<float> &vc_x, vector<float> &vl_x, vector
     }
   }
   for (int i = 0; i < SPBlocks.size(); ++i) {
-    int headIdx = SPBlocks[i].selfsym[0];
-    Ppoint_F head_pos = Blocks[headIdx].Cpoint;
-    Ppoint_F head_dem = Blocks[headIdx].Dpoint;
     float center = 0;
     if (SPBlocks[i].horizon) {
       for (auto i_selfsym : SPBlocks[i].selfsym) {
