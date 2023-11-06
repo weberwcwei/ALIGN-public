@@ -15,7 +15,6 @@ Placer::Placer(std::vector<PnRDB::hierNode>& nodeVec, string opath, int effort, 
     setPlacementInfoFromJson(nodeVec, opath, drcInfo);
   }else{
     if (hyper.use_analytical_placer)
-      //#define analytical_placer
       PlacementRegularAspectRatio_ILP_Analytical(nodeVec, opath, effort, drcInfo);
     else
       PlacementRegularAspectRatio_ILP(nodeVec, opath, effort, drcInfo);

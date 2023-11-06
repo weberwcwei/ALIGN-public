@@ -70,9 +70,9 @@ void Placement::place(PnRDB::hierNode &current_node) {
   // read alignment constrains
   read_alignment(current_node);
   read_order(current_node);
+  
   clock_t start, end;
   start = clock();
-
   Initilize_Placement_Rand(current_node);
   end = clock();
   logger->debug("initialize runtime: {0} s", (double)(end - start) / CLOCKS_PER_SEC);
@@ -80,15 +80,15 @@ void Placement::place(PnRDB::hierNode &current_node) {
   print_blocks_nets();
   // step 3: call E_placer
   logger->debug("start ePlacement");
-  PlotPlacement(602);
+  // PlotPlacement(602);
   // restore_MS();
   // PlotPlacement(601);
   E_Placer(current_node);
-  PlotPlacement(6021);
+  // PlotPlacement(6021);
   bool isCompact = true;
 
   // restore_MS();
-  PlotPlacement(603);
+  // PlotPlacement(603);
   // setp 4: write back to HierNode
   writeback(current_node);
 }
@@ -754,11 +754,11 @@ void Placement::E_Placer(PnRDB::hierNode &current_node) {
   // dummy_net_weight = 0.001;
   // float dummy_net_weight_rate = dummy_net_weight_rate;
   // float dummy_net_target = 3.0;
-  float dummy_net_weight_increase = cal_weight_init_increase(dummy_net_rate, dummy_net_weight, dummy_net_target, 100);
+  // float dummy_net_weight_increase = cal_weight_init_increase(dummy_net_rate, dummy_net_weight, dummy_net_target, 100);
   vector<float> Density;
   vector<float> Overlap;
 
-  PlotPlacement(0);
+  // PlotPlacement(0);
   current_overlap = Cal_Overlap();
 
 
@@ -798,7 +798,7 @@ void Placement::E_Placer(PnRDB::hierNode &current_node) {
     Update_Bin_Density();
     // gradient cal
     Cal_WA_Net_Force();
-    cal_dummy_net_weight(dummy_net_weight, dummy_net_rate, dummy_net_weight_increase);
+    // cal_dummy_net_weight(dummy_net_weight, dummy_net_rate, dummy_net_weight_increase);
     Cal_Density_Eforce();
 
     Cal_sym_Force();
@@ -835,7 +835,7 @@ void Placement::E_Placer(PnRDB::hierNode &current_node) {
   }
 
   // restore_MS();
-  PlotPlacement(count_number);
+  // PlotPlacement(count_number);
   logger->debug("iter num when stop:={0}", count_number);
 }
 

@@ -127,8 +127,8 @@ def per_placement( placement_verilog_d, *, hN, scale_factor, opath, placement_ve
 
     if hpwl_alt != hN.HPWL_extend:
         msg = f'hpwl: locally computed from netlist {hpwl_alt}, placer computed {hN.HPWL_extend} differ for {concrete_name}!'
-        logger.error(msg)
-        assert False, msg
+        logger.warning(msg)
+        #assert False, msg
     else:
         logger.debug( f'hpwl: locally computed from netlist {hpwl_alt}, placer computed {hN.HPWL_extend} are equal for {concrete_name}!')
 

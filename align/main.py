@@ -178,7 +178,7 @@ def schematic2layout(netlist_dir, pdk_dir, netlist_file=None, subckt=None, worki
     if '2_primitives' in steps_to_run:
         shutil.rmtree(primitive_dir, ignore_errors=True)
         primitive_dir.mkdir(exist_ok=True)
-        primitives = generate_primitives(primitive_lib, pdk_dir, primitive_dir, netlist_dir, blackbox_dir, scale)
+        primitives = generate_primitives(primitive_lib, pdk_dir, primitive_dir, netlist_dir)
         with (primitive_dir / '__primitives__.json').open('wt') as fp:
             json.dump(primitives, fp=fp, indent=2)
     elif sub_steps:
