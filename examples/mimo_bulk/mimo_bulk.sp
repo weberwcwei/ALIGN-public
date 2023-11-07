@@ -1,11 +1,11 @@
-** Generated for: hspiceD
+** Generated for: hspiceD w=192e-6
 ** Generated on: Mar  6 10:41:14 2021
 ** Design library name: TO65_20200429
 ** Design cell name: mimo_bulk
 ** Design view name: schematic
 
 
-.model nmos_lvt nmos l=1 w=1 nfin=1 nf=1 m=1  stack=1 parallel=1
+.model nmos_lvt nmos l=1 nfin=1 nf=1 m=1  stack=1 parallel=1
 
 .TEMP 25.0
 .OPTION
@@ -18,12 +18,12 @@
 ** Cell name: TIA_1
 ** View name: schematic
 .subckt TIA_1 _net3 _net1 _net0 _net2 vdda vssa
-m1 _net0 _net1 vssa vssa nmos_lvt l=400e-9 w=64e-6 m=1 nf=8
-m0 _net2 _net3 vssa vssa nmos_lvt l=400e-9 w=64e-6 m=1 nf=8
-m5 net13 _net0 vdda vdda pmos_rvt l=200e-9 w=32e-6 m=1 nf=8
-m4 net13 _net2 vdda vdda pmos_rvt l=200e-9 w=32e-6 m=1 nf=8
-m3 _net0 _net1 net13 net13 pmos_rvt l=200e-9 w=192e-6 m=1 nf=32
-m2 _net2 _net3 net13 net13 pmos_rvt l=200e-9 w=192e-6 m=1 nf=32
+m1 _net0 _net1 vssa vssa nmos_lvt l=400e-9 m=1 nf=8
+m0 _net2 _net3 vssa vssa nmos_lvt l=400e-9 m=1 nf=8
+m5 net13 _net0 vdda vdda pmos l=200e-9 m=1 nf=8
+m4 net13 _net2 vdda vdda pmos l=200e-9 m=1 nf=8
+m3 _net0 _net1 net13 net13 pmos l=200e-9 m=1 nf=32
+m2 _net2 _net3 net13 net13 pmos l=200e-9 m=1 nf=32
 .ends TIA_1
 ** End of subcircuit definition.
 
@@ -31,22 +31,22 @@ m2 _net2 _net3 net13 net13 pmos_rvt l=200e-9 w=192e-6 m=1 nf=32
 ** Cell name: bottom_plate_4path_beamforming
 ** View name: schematic
 .subckt bottom_plate_4path_beamforming clk_x1 clk_x1_b clk_x2 clk_x2_b clk_x3 clk_x3_b clk_x4 clk_x4_b _net19 _net17 vcmbias vdda vssa _net11 _net6 _net10 _net4 _net9 _net2 _net8 _net0
-m15 _net0 clk_x4 _net1 _net1 nmos_rvt l=60e-9 w=2e-6 nf=16
-m14 _net2 clk_x3 _net3 _net3 nmos_rvt l=60e-9 w=2e-6 nf=16
-m13 _net4 clk_x2 _net5 _net5 nmos_rvt l=60e-9 w=2e-6 nf=16
-m12 _net6 clk_x1 _net7 _net7 nmos_rvt l=60e-9 w=2e-6 nf=16
-m11 _net8 clk_x4_b _net1 _net1 nmos_rvt l=60e-9 w=2e-6 nf=16
-m10 _net9 clk_x3_b _net3 _net3 nmos_rvt l=60e-9 w=2e-6 nf=16
-m9 _net10 clk_x2_b _net5 _net5 nmos_rvt l=60e-9 w=2e-6 nf=16
-m8 _net11 clk_x1_b _net7 _net7 nmos_rvt l=60e-9 w=2e-6 nf=16
-m7 _net0 clk_x4_b _net12 _net12 nmos_rvt l=60e-9 w=2e-6 nf=16
-m6 _net2 clk_x3_b _net13 _net13 nmos_rvt l=60e-9 w=2e-6 nf=16
-m5 _net4 clk_x2_b _net14 _net14 nmos_rvt l=60e-9 w=2e-6 nf=16
-m4 _net6 clk_x1_b _net15 _net15 nmos_rvt l=60e-9 w=2e-6 nf=16
-m3 _net8 clk_x4 _net12 _net12 nmos_rvt l=60e-9 w=2e-6 nf=16
-m2 _net9 clk_x3 _net13 _net13 nmos_rvt l=60e-9 w=2e-6 nf=16
-m1 _net10 clk_x2 _net14 _net14 nmos_rvt l=60e-9 w=2e-6 nf=16
-m0 _net11 clk_x1 _net15 _net15 nmos_rvt l=60e-9 w=2e-6 nf=16
+m15 _net0 clk_x4 _net1 _net1 nmos l=60e-9 nf=16
+m14 _net2 clk_x3 _net3 _net3 nmos l=60e-9 nf=16
+m13 _net4 clk_x2 _net5 _net5 nmos l=60e-9 nf=16
+m12 _net6 clk_x1 _net7 _net7 nmos l=60e-9 nf=16
+m11 _net8 clk_x4_b _net1 _net1 nmos l=60e-9 nf=16
+m10 _net9 clk_x3_b _net3 _net3 nmos l=60e-9 nf=16
+m9 _net10 clk_x2_b _net5 _net5 nmos l=60e-9 nf=16
+m8 _net11 clk_x1_b _net7 _net7 nmos l=60e-9 nf=16
+m7 _net0 clk_x4_b _net12 _net12 nmos l=60e-9 nf=16
+m6 _net2 clk_x3_b _net13 _net13 nmos l=60e-9 nf=16
+m5 _net4 clk_x2_b _net14 _net14 nmos l=60e-9 nf=16
+m4 _net6 clk_x1_b _net15 _net15 nmos l=60e-9 nf=16
+m3 _net8 clk_x4 _net12 _net12 nmos l=60e-9 nf=16
+m2 _net9 clk_x3 _net13 _net13 nmos l=60e-9 nf=16
+m1 _net10 clk_x2 _net14 _net14 nmos l=60e-9 nf=16
+m0 _net11 clk_x1 _net15 _net15 nmos l=60e-9 nf=16
 **Series configuration of R18
 r18_1__dmy0  _net16 xr18_1__dmy0  100
 r18_2__dmy0  xr18_1__dmy0 xr18_2__dmy0  100
@@ -104,8 +104,8 @@ xi0 _net18 _net19 _net20 _net21 _net22 _net23 _net24 _net25 _net26 _net27 vcmbia
 ** Cell name: INVx1_8Phase
 ** View name: schematic
 .subckt INVx1_8Phase in out vdd vss
-m1 out in vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
-m0 out in vss vss nmos_rvt l=60e-9 w=600e-9 nf=4
+m1 out in vdd vdd pmos l=60e-9 nf=4
+m0 out in vss vss nmos l=60e-9 nf=4
 .ends INVx1_8Phase
 ** End of subcircuit definition.
 
@@ -162,14 +162,14 @@ xi3 net1b outn vdd vss INVx1_8Phase
 xi2 net1 outp vdd vss INVx1_8Phase
 xi1 net2 net1b vdd vss INVx1_8Phase
 xi0 net3 net1 vdd vss INVx1_8Phase
-m6 net1 net1b vss vss nmos_rvt l=60e-9 w=300e-9 nf=2
-m4 net1b net1 vss vss nmos_rvt l=60e-9 w=300e-9 nf=2
-m0 bias bias net026 vss nmos_rvt l=60e-9 w=300e-9 nf=2
-m2 net026 vdd vss vss nmos_rvt l=60e-9 w=300e-9 nf=2
-m7 net1 net1b vdd vdd pmos_rvt l=60e-9 w=300e-9 nf=2
-m5 net1b net1 vdd vdd pmos_rvt l=60e-9 w=300e-9 nf=2
-m3 net011 vss vdd vdd pmos_rvt l=60e-9 w=7.5e-7 nf=2
-m1 bias bias net011 vdd pmos_rvt l=60e-9 w=7.5e-7 nf=2
+m6 net1 net1b vss vss nmos l=60e-9 nf=2
+m4 net1b net1 vss vss nmos l=60e-9 nf=2
+m0 bias bias net026 vss nmos l=60e-9 nf=2
+m2 net026 vdd vss vss nmos l=60e-9 nf=2
+m7 net1 net1b vdd vdd pmos l=60e-9 nf=2
+m5 net1b net1 vdd vdd pmos l=60e-9 nf=2
+m3 net011 vss vdd vdd pmos l=60e-9 nf=2
+m1 bias bias net011 vdd pmos l=60e-9 nf=2
 .ends CLK_IO
 ** End of subcircuit definition.
 
@@ -177,8 +177,8 @@ m1 bias bias net011 vdd pmos_rvt l=60e-9 w=7.5e-7 nf=2
 ** Cell name: INVx1_8Phase
 ** View name: schematic
 .subckt INVx1_8Phase_schematic in out vdd vss
-m1 out in vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
-m0 out in vss vss nmos_rvt l=60e-9 w=600e-9 nf=4
+m1 out in vdd vdd pmos l=60e-9 nf=4
+m0 out in vss vss nmos l=60e-9 nf=4
 .ends INVx1_8Phase_schematic
 ** End of subcircuit definition.
 
@@ -186,8 +186,8 @@ m0 out in vss vss nmos_rvt l=60e-9 w=600e-9 nf=4
 ** Cell name: INVx4_8Phase
 ** View name: schematic
 .subckt INVx4_8Phase in out vdd vss
-m1 out in vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=16
-m0 out in vss vss nmos_rvt l=60e-9 w=600e-9 nf=16
+m1 out in vdd vdd pmos l=60e-9 nf=16
+m0 out in vss vss nmos l=60e-9 nf=16
 .ends INVx4_8Phase
 ** End of subcircuit definition.
 
@@ -195,12 +195,12 @@ m0 out in vss vss nmos_rvt l=60e-9 w=600e-9 nf=16
 ** Cell name: AND2
 ** View name: schematic
 .subckt AND2 a b out vdd vss
-m4 net26 b vss vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m6 out net21 vss vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m5 net21 a net26 vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m13 net21 b vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
-m14 net21 a vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
-m1 out net21 vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
+m4 net26 b vss vss nmos l=60e-9 nf=4
+m6 out net21 vss vss nmos l=60e-9 nf=4
+m5 net21 a net26 vss nmos l=60e-9 nf=4
+m13 net21 b vdd vdd pmos l=60e-9 nf=4
+m14 net21 a vdd vdd pmos l=60e-9 nf=4
+m1 out net21 vdd vdd pmos l=60e-9 nf=4
 .ends AND2
 ** End of subcircuit definition.
 
@@ -209,24 +209,24 @@ m1 out net21 vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
 ** View name: schematic
 ** Digital
 .subckt FF_DTG clk clkb in out0 out90 out180 out270 set setb vdd vss
-m1 in setb vss vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m2 net59 in vss vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m3 net_l1 out90 vss vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m5 net023 net_l1 vss vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m14 net59 clkb out90 vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m12 net_l1 clk out0 vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m11 net023 clk out180 vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m6 net026 net59 vss vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m10 net026 clkb out270 vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m20 out90 clk net59 vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
-m0 in set vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
-m4 net59 in vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
-m8 net023 net_l1 vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
-m7 net_l1 out90 vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
-m17 out0 clkb net_l1 vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
-m13 out270 clk net026 vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
-m16 out180 clkb net023 vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
-m9 net026 net59 vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
+m1 in setb vss vss nmos l=60e-9 nf=4
+m2 net59 in vss vss nmos l=60e-9 nf=4
+m3 net_l1 out90 vss vss nmos l=60e-9 nf=4
+m5 net023 net_l1 vss vss nmos l=60e-9 nf=4
+m14 net59 clkb out90 vss nmos l=60e-9 nf=4
+m12 net_l1 clk out0 vss nmos l=60e-9 nf=4
+m11 net023 clk out180 vss nmos l=60e-9 nf=4
+m6 net026 net59 vss vss nmos l=60e-9 nf=4
+m10 net026 clkb out270 vss nmos l=60e-9 nf=4
+m20 out90 clk net59 vdd pmos l=60e-9 nf=4
+m0 in set vdd vdd pmos l=60e-9 nf=4
+m4 net59 in vdd vdd pmos l=60e-9 nf=4
+m8 net023 net_l1 vdd vdd pmos l=60e-9 nf=4
+m7 net_l1 out90 vdd vdd pmos l=60e-9 nf=4
+m17 out0 clkb net_l1 vdd pmos l=60e-9 nf=4
+m13 out270 clk net026 vdd pmos l=60e-9 nf=4
+m16 out180 clkb net023 vdd pmos l=60e-9 nf=4
+m9 net026 net59 vdd vdd pmos l=60e-9 nf=4
 .ends FF_DTG
 ** End of subcircuit definition.
 
@@ -236,22 +236,22 @@ m9 net026 net59 vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
 ** Digital
 .subckt Divider clk clkb out<0> out<90> out<180> out<270> set setb vdd vss
 xi0 clk clkb d<180> d<0> d<90> d<180> d<270> set setb vdd vss FF_DTG
-m3<0> out<0> net012<0> vss vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m3<1> out<90> net012<1> vss vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m3<2> out<180> net012<2> vss vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m3<3> out<270> net012<3> vss vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m2<0> net012<0> d<0> vss vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m2<1> net012<1> d<90> vss vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m2<2> net012<2> d<180> vss vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m2<3> net012<3> d<270> vss vss nmos_rvt l=60e-9 w=600e-9 nf=4
-m0<0> net012<0> d<0> vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
-m0<1> net012<1> d<90> vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
-m0<2> net012<2> d<180> vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
-m0<3> net012<3> d<270> vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
-m1<0> out<0> net012<0> vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
-m1<1> out<90> net012<1> vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
-m1<2> out<180> net012<2> vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
-m1<3> out<270> net012<3> vdd vdd pmos_rvt l=60e-9 w=1.2e-6 nf=4
+m3<0> out<0> net012<0> vss vss nmos l=60e-9 nf=4
+m3<1> out<90> net012<1> vss vss nmos l=60e-9 nf=4
+m3<2> out<180> net012<2> vss vss nmos l=60e-9 nf=4
+m3<3> out<270> net012<3> vss vss nmos l=60e-9 nf=4
+m2<0> net012<0> d<0> vss vss nmos l=60e-9 nf=4
+m2<1> net012<1> d<90> vss vss nmos l=60e-9 nf=4
+m2<2> net012<2> d<180> vss vss nmos l=60e-9 nf=4
+m2<3> net012<3> d<270> vss vss nmos l=60e-9 nf=4
+m0<0> net012<0> d<0> vdd vdd pmos l=60e-9 nf=4
+m0<1> net012<1> d<90> vdd vdd pmos l=60e-9 nf=4
+m0<2> net012<2> d<180> vdd vdd pmos l=60e-9 nf=4
+m0<3> net012<3> d<270> vdd vdd pmos l=60e-9 nf=4
+m1<0> out<0> net012<0> vdd vdd pmos l=60e-9 nf=4
+m1<1> out<90> net012<1> vdd vdd pmos l=60e-9 nf=4
+m1<2> out<180> net012<2> vdd vdd pmos l=60e-9 nf=4
+m1<3> out<270> net012<3> vdd vdd pmos l=60e-9 nf=4
 .ends Divider
 ** End of subcircuit definition.
 
@@ -363,18 +363,18 @@ c5 n3 _net1 13e-12
 c4 n2 _net1 13e-12
 c6 n4 _net1 13e-12
 c10 n8 _net0 13e-12
-m0 n1 clk0 n5 vcmbias nmos_rvt l=60e-9 w=4e-6 nf=16
-m1 n2 clk90 n6 vcmbias nmos_rvt l=60e-9 w=4e-6 nf=16
-m2 n3 clk180 n7 vcmbias nmos_rvt l=60e-9 w=4e-6 nf=16
-m3 n4 clk270 n8 vcmbias nmos_rvt l=60e-9 w=4e-6 nf=16
-m4 n1 clk0 vcmbias vcmbias nmos_rvt l=60e-9 w=4e-6 nf=16
-m5 n2 clk90 vcmbias vcmbias nmos_rvt l=60e-9 w=4e-6 nf=16
-m6 n3 clk180 vcmbias vcmbias nmos_rvt l=60e-9 w=4e-6 nf=16
-m7 n4 clk270 vcmbias vcmbias nmos_rvt l=60e-9 w=4e-6 nf=16
-m8 n5 clk0 vcmbias vcmbias nmos_rvt l=60e-9 w=4e-6 nf=16
-m9 n6 clk90 vcmbias vcmbias nmos_rvt l=60e-9 w=4e-6 nf=16
-m10 n7 clk180 vcmbias vcmbias nmos_rvt l=60e-9 w=4e-6 nf=16
-m11 n8 clk270 vcmbias vdda_q nmos_rvt l=60e-9 w=4e-6 nf=16
+m0 n1 clk0 n5 vcmbias nmos l=60e-9 nf=16
+m1 n2 clk90 n6 vcmbias nmos l=60e-9 nf=16
+m2 n3 clk180 n7 vcmbias nmos l=60e-9 nf=16
+m3 n4 clk270 n8 vcmbias nmos l=60e-9 nf=16
+m4 n1 clk0 vcmbias vcmbias nmos l=60e-9 nf=16
+m5 n2 clk90 vcmbias vcmbias nmos l=60e-9 nf=16
+m6 n3 clk180 vcmbias vcmbias nmos l=60e-9 nf=16
+m7 n4 clk270 vcmbias vcmbias nmos l=60e-9 nf=16
+m8 n5 clk0 vcmbias vcmbias nmos l=60e-9 nf=16
+m9 n6 clk90 vcmbias vcmbias nmos l=60e-9 nf=16
+m10 n7 clk180 vcmbias vcmbias nmos l=60e-9 nf=16
+m11 n8 clk270 vcmbias vdda_q nmos l=60e-9 nf=16
 ** vdda_q was floating add to one port @jitesh to fix it
 .ends bottom_plate_4path_mixer_diff_end
 ** End of subcircuit definition.
