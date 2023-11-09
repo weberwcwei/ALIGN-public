@@ -94,3 +94,4 @@ tests/cell_fabric/Foo*.cir
 _skbuild/
 *.lp
 workspaces/*
+FinFET14nm_GF_PDK
